@@ -1,0 +1,1881 @@
+---
+title: "ExtendedERS"
+author: "Matt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Data Read In
+
+```{r}
+library(lme4); library(lmerTest); library(Rmisc); library(DescTools); library(tidyverse); library(emmeans); library(broom); library(jtools); library(officer); library(flextable); library(openxlsx)
+```
+
+```{r}
+cat_all <- read.csv('./csv/all_data_caters.csv')
+item_all <- read.csv('./csv/all_data_itemers.csv')
+broad_all <- read.csv('./csv/all_data_broaders.csv')
+```
+
+# Mixed Effects Models: PreJudgment
+
+## Category Level
+
+```{r}
+cat_all$source_acc[cat_all$source_acc == 0] <- -1
+cat_all$preJudgment[cat_all$preJudgment == 0] <- -1
+catmPar_pre <- lmer(z_ers_mPar ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catmPar_pre)
+```
+
+```{r}
+confint(catmPar_pre, method="Wald")
+```
+
+```{r}
+catmPar_mmeans <- emmeans(catmPar_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catmPar_mmeans))
+```
+
+```{r}
+catmPar_mmeans_tidy <- tidy(catmPar_mmeans, conf.int = T)
+catmPar_mmeans_tidy$preJudgmentChar <- ''
+catmPar_mmeans_tidy$preJudgmentChar[catmPar_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catmPar_mmeans_tidy$preJudgmentChar[catmPar_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catmPar_mmeans_tidy$mask <- 'mPar'
+```
+
+```{r}
+catMTL_pre <- lmer(z_ers_MTLcortex ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+              data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catMTL_pre)
+```
+
+```{r}
+confint(catMTL_pre, method="Wald")
+```
+
+```{r}
+catMTL_mmeans <- emmeans(catMTL_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catMTL_mmeans))
+```
+
+```{r}
+catMTLcortex_mmeans_tidy <- tidy(catMTL_mmeans, conf.int = T)
+catMTLcortex_mmeans_tidy$preJudgmentChar <- ''
+catMTLcortex_mmeans_tidy$preJudgmentChar[catMTLcortex_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catMTLcortex_mmeans_tidy$preJudgmentChar[catMTLcortex_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catMTLcortex_mmeans_tidy$mask <- 'MTLcortex'
+```
+
+```{r}
+catfusi_pre <- lmer(z_ers_fusiform ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+              data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catfusi_pre)
+```
+
+```{r}
+confint(catfusi_pre, method="Wald")
+```
+
+```{r}
+catfusi_mmeans <- emmeans(catfusi_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catfusi_mmeans))
+```
+
+```{r}
+catfusiform_mmeans_tidy <- tidy(catfusi_mmeans, conf.int = T)
+catfusiform_mmeans_tidy$preJudgmentChar <- ''
+catfusiform_mmeans_tidy$preJudgmentChar[catfusiform_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catfusiform_mmeans_tidy$preJudgmentChar[catfusiform_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catfusiform_mmeans_tidy$mask <- 'fusiform'
+```
+
+```{r}
+catHipp_pre <- lmer(z_ers_Hipp ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+              data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catHipp_pre)
+```
+
+```{r}
+confint(catHipp_pre, method="Wald")
+```
+
+```{r}
+catHipp_mmeans <- emmeans(catHipp_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catHipp_mmeans))
+```
+
+```{r}
+catHipp_mmeans_tidy <- tidy(catHipp_mmeans, conf.int = T)
+catHipp_mmeans_tidy$preJudgmentChar <- ''
+catHipp_mmeans_tidy$preJudgmentChar[catHipp_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catHipp_mmeans_tidy$preJudgmentChar[catHipp_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catHipp_mmeans_tidy$mask <- 'Hipp'
+```
+
+```{r}
+fdr_corr <- list()
+fdr_corr_int <- list()
+catlPFC_pre <- lmer(z_ers_lPFC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(catlPFC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(catlPFC_pre))[,"Pr(>|t|)"][1])
+summary(catlPFC_pre)
+```
+
+```{r}
+confint(catlPFC_pre, method="Wald")
+```
+
+```{r}
+catlPFC_mmeans <- emmeans(catlPFC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catlPFC_mmeans))
+```
+
+```{r}
+catlPFC_mmeans_tidy <- tidy(catlPFC_mmeans, conf.int = T)
+catlPFC_mmeans_tidy$preJudgmentChar <- ''
+catlPFC_mmeans_tidy$preJudgmentChar[catlPFC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catlPFC_mmeans_tidy$preJudgmentChar[catlPFC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catlPFC_mmeans_tidy$mask <- 'd&lPFC'
+```
+
+```{r}
+catLPC_pre <- lmer(z_ers_LPC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+              data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(catLPC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(catLPC_pre))[,"Pr(>|t|)"][1])
+summary(catLPC_pre)
+```
+
+```{r}
+confint(catLPC_pre, method="Wald")
+```
+
+```{r}
+catLPC_mmeans <- emmeans(catLPC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catLPC_mmeans))
+```
+
+```{r}
+catLPC_mmeans_tidy <- tidy(catLPC_mmeans, conf.int = T)
+catLPC_mmeans_tidy$preJudgmentChar <- ''
+catLPC_mmeans_tidy$preJudgmentChar[catLPC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catLPC_mmeans_tidy$preJudgmentChar[catLPC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catLPC_mmeans_tidy$mask <- 'LPC'
+```
+
+```{r}
+catvmPFC_pre <- lmer(z_ers_vmPFC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+              data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(catvmPFC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(catvmPFC_pre))[,"Pr(>|t|)"][1])
+summary(catvmPFC_pre)
+```
+
+```{r}
+confint(catvmPFC_pre, method="Wald")
+```
+
+```{r}
+catvmPFC_mmeans <- emmeans(catvmPFC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catvmPFC_mmeans))
+```
+
+```{r}
+catvmPFC_mmeans_tidy <- tidy(catvmPFC_mmeans, conf.int = T)
+catvmPFC_mmeans_tidy$preJudgmentChar <- ''
+catvmPFC_mmeans_tidy$preJudgmentChar[catvmPFC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catvmPFC_mmeans_tidy$preJudgmentChar[catvmPFC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catvmPFC_mmeans_tidy$mask <- 'vmPFC'
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_int) 
+print(p.adjust(fdr_corr_int, method = 'fdr'))
+```
+
+### Graphing
+
+```{r}
+cat_mmeans_tidy <- rbind(catmPar_mmeans_tidy, catMTLcortex_mmeans_tidy, catfusiform_mmeans_tidy, catHipp_mmeans_tidy, catLPC_mmeans_tidy, catlPFC_mmeans_tidy, catvmPFC_mmeans_tidy)
+```
+
+```{r}
+ord <- c('Hipp', 'MTLcortex', 'fusiform', 'mPar', 'LPC', 'd&lPFC','vmPFC')
+cat_mmeans_tidy$mask <- factor(cat_mmeans_tidy$mask, levels = ord)
+
+ggplot(cat_mmeans_tidy, aes(x = mask, y = estimate, colour = preJudgmentChar)) + 
+  ylab('ERS') + 
+  xlab('ROI') + 
+  ggtitle('Category Information by Preceding Judgment') + 
+  ylim(-0.01, 0.025) +  
+  # geom_hline(yintercept = summary(aa_resid_model)$coefficients[,1]) + 
+  geom_pointrange(aes(x = mask, ymin=estimate-std.error, ymax=estimate+std.error), lwd=1, fatten=2.5,position=position_dodge(.4)) + 
+  theme_classic() + 
+  scale_color_manual(values=c("#084081", "#2b8cbe"), name = "Preceding\nJudgment") +
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(axis.text.x = element_text(angle = 30)) + 
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```
+
+## Item Level
+
+```{r}
+item_all$source_acc[item_all$source_acc == 0] <- -1
+item_all$preJudgment[item_all$preJudgment == 0] <- -1
+itemmPar_pre <- lmer(z_ers_mPar ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemmPar_pre)
+```
+
+```{r}
+confint(itemmPar_pre, method="Wald")
+```
+
+```{r}
+itemmPar_mmeans <- emmeans(itemmPar_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemmPar_mmeans))
+```
+
+```{r}
+itemmPar_mmeans_tidy <- tidy(itemmPar_mmeans, conf.int = T)
+itemmPar_mmeans_tidy$preJudgmentChar <- ''
+itemmPar_mmeans_tidy$preJudgmentChar[itemmPar_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemmPar_mmeans_tidy$preJudgmentChar[itemmPar_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemmPar_mmeans_tidy$mask <- 'mPar'
+```
+
+```{r}
+itemMTL_pre <- lmer(z_ers_MTLcortex ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemMTL_pre)
+```
+
+```{r}
+confint(itemMTL_pre, method="Wald")
+```
+
+```{r}
+itemMTL_mmeans <- emmeans(itemMTL_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemMTL_mmeans))
+```
+
+```{r}
+itemMTLcortex_mmeans_tidy <- tidy(itemMTL_mmeans, conf.int = T)
+itemMTLcortex_mmeans_tidy$preJudgmentChar <- ''
+itemMTLcortex_mmeans_tidy$preJudgmentChar[itemMTLcortex_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemMTLcortex_mmeans_tidy$preJudgmentChar[itemMTLcortex_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemMTLcortex_mmeans_tidy$mask <- 'MTLcortex'
+```
+
+```{r}
+itemfusi_pre <- lmer(z_ers_fusiform ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemfusi_pre)
+```
+
+```{r}
+confint(itemfusi_pre, method="Wald")
+```
+
+```{r}
+itemfusi_mmeans <- emmeans(itemfusi_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemfusi_mmeans))
+```
+
+```{r}
+itemfusiform_mmeans_tidy <- tidy(itemfusi_mmeans, conf.int = T)
+itemfusiform_mmeans_tidy$preJudgmentChar <- ''
+itemfusiform_mmeans_tidy$preJudgmentChar[itemfusiform_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemfusiform_mmeans_tidy$preJudgmentChar[itemfusiform_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemfusiform_mmeans_tidy$mask <- 'fusiform'
+```
+
+```{r}
+itemHipp_pre <- lmer(z_ers_Hipp ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemHipp_pre)
+```
+
+```{r}
+confint(itemHipp_pre, method="Wald")
+```
+
+```{r}
+itemHipp_mmeans <- emmeans(itemHipp_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemHipp_mmeans))
+```
+
+```{r}
+itemHipp_mmeans_tidy <- tidy(itemHipp_mmeans, conf.int = T)
+itemHipp_mmeans_tidy$preJudgmentChar <- ''
+itemHipp_mmeans_tidy$preJudgmentChar[itemHipp_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemHipp_mmeans_tidy$preJudgmentChar[itemHipp_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemHipp_mmeans_tidy$mask <- 'Hipp'
+```
+
+```{r}
+fdr_corr <- list()
+fdr_corr_int <- list()
+itemlPFC_pre <- lmer(z_ers_lPFC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(itemlPFC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(itemlPFC_pre))[,"Pr(>|t|)"][1])
+summary(itemlPFC_pre)
+```
+
+```{r}
+confint(itemlPFC_pre, method="Wald")
+```
+
+```{r}
+itemlPFC_mmeans <- emmeans(itemlPFC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemlPFC_mmeans))
+```
+
+```{r}
+itemlPFC_mmeans_tidy <- tidy(itemlPFC_mmeans, conf.int = T)
+itemlPFC_mmeans_tidy$preJudgmentChar <- ''
+itemlPFC_mmeans_tidy$preJudgmentChar[itemlPFC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemlPFC_mmeans_tidy$preJudgmentChar[itemlPFC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemlPFC_mmeans_tidy$mask <- 'd&lPFC'
+```
+
+```{r}
+itemLPC_pre <- lmer(z_ers_LPC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(itemLPC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(itemLPC_pre))[,"Pr(>|t|)"][1])
+summary(itemLPC_pre)
+```
+
+```{r}
+confint(itemLPC_pre, method="Wald")
+```
+
+```{r}
+itemLPC_mmeans <- emmeans(itemLPC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemLPC_mmeans))
+```
+
+```{r}
+itemLPC_mmeans_tidy <- tidy(itemLPC_mmeans, conf.int = T)
+itemLPC_mmeans_tidy$preJudgmentChar <- ''
+itemLPC_mmeans_tidy$preJudgmentChar[itemLPC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemLPC_mmeans_tidy$preJudgmentChar[itemLPC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemLPC_mmeans_tidy$mask <- 'LPC'
+```
+
+```{r}
+itemvmPFC_pre <- lmer(z_ers_vmPFC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(itemvmPFC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(itemvmPFC_pre))[,"Pr(>|t|)"][1])
+summary(itemvmPFC_pre)
+```
+
+```{r}
+confint(itemvmPFC_pre, method="Wald")
+```
+
+```{r}
+itemvmPFC_mmeans <- emmeans(itemvmPFC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemvmPFC_mmeans))
+```
+
+```{r}
+itemvmPFC_mmeans_tidy <- tidy(itemvmPFC_mmeans, conf.int = T)
+itemvmPFC_mmeans_tidy$preJudgmentChar <- ''
+itemvmPFC_mmeans_tidy$preJudgmentChar[itemvmPFC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemvmPFC_mmeans_tidy$preJudgmentChar[itemvmPFC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemvmPFC_mmeans_tidy$mask <- 'vmPFC'
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_int)
+print(p.adjust(fdr_corr_int, method = 'fdr'))
+```
+
+### Graphing: All
+
+```{r}
+item_mmeans_tidy <- rbind(itemmPar_mmeans_tidy, itemMTLcortex_mmeans_tidy, itemfusiform_mmeans_tidy, itemHipp_mmeans_tidy, itemLPC_mmeans_tidy, itemlPFC_mmeans_tidy, itemvmPFC_mmeans_tidy)
+```
+
+```{r}
+ord <- c('Hipp', 'MTLcortex', 'fusiform', 'mPar', 'LPC', 'd&lPFC', 'vmPFC')
+item_mmeans_tidy$mask <- factor(item_mmeans_tidy$mask, levels = ord)
+
+ggplot(item_mmeans_tidy, aes(x = mask, y = estimate, colour = preJudgmentChar)) + 
+  ylab('ERS') + 
+  xlab('ROI') + 
+  ggtitle('Trial-Specific Information by Preceding Judgment') + 
+  ylim(-0.01, 0.025) + 
+  # geom_hline(yintercept = summary(aa_resid_model)$coefficients[,1]) + 
+  geom_pointrange(aes(x = mask, ymin=estimate-std.error, ymax=estimate+std.error), lwd=1, fatten=2.5,position=position_dodge(.4)) + 
+  theme_classic() + 
+  scale_color_manual(values=c("#084081", "#2b8cbe"), name = "Preceding\nJudgment") +
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(axis.text.x = element_text(angle = 30)) + 
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```
+
+## Broad Level
+
+```{r}
+broad_all$source_acc[broad_all$source_acc == 0] <- -1
+broad_all$preJudgment[broad_all$preJudgment == 0] <- -1
+broadmPar_pre <- lmer(z_ers_mPar ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadmPar_pre)
+```
+
+```{r}
+confint(broadmPar_pre, method="Wald")
+```
+
+```{r}
+broadmPar_mmeans <- emmeans(broadmPar_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadmPar_mmeans))
+```
+
+```{r}
+broadmPar_mmeans_tidy <- tidy(broadmPar_mmeans, conf.int = T)
+broadmPar_mmeans_tidy$preJudgmentChar <- ''
+broadmPar_mmeans_tidy$preJudgmentChar[broadmPar_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadmPar_mmeans_tidy$preJudgmentChar[broadmPar_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadmPar_mmeans_tidy$mask <- 'mPar'
+```
+
+```{r}
+broadMTL_pre <- lmer(z_ers_MTLcortex ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadMTL_pre)
+```
+
+```{r}
+confint(broadMTL_pre, method="Wald")
+```
+
+```{r}
+broadMTL_mmeans <- emmeans(broadMTL_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadMTL_mmeans))
+```
+
+```{r}
+broadMTLcortex_mmeans_tidy <- tidy(broadMTL_mmeans, conf.int = T)
+broadMTLcortex_mmeans_tidy$preJudgmentChar <- ''
+broadMTLcortex_mmeans_tidy$preJudgmentChar[broadMTLcortex_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadMTLcortex_mmeans_tidy$preJudgmentChar[broadMTLcortex_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadMTLcortex_mmeans_tidy$mask <- 'MTLcortex'
+```
+
+```{r}
+broadfusi_pre <- lmer(z_ers_fusiform ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadfusi_pre)
+```
+
+```{r}
+confint(broadfusi_pre, method="Wald")
+```
+
+```{r}
+broadfusi_mmeans <- emmeans(broadfusi_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadfusi_mmeans))
+```
+
+```{r}
+broadfusiform_mmeans_tidy <- tidy(broadfusi_mmeans, conf.int = T)
+broadfusiform_mmeans_tidy$preJudgmentChar <- ''
+broadfusiform_mmeans_tidy$preJudgmentChar[broadfusiform_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadfusiform_mmeans_tidy$preJudgmentChar[broadfusiform_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadfusiform_mmeans_tidy$mask <- 'fusiform'
+```
+
+```{r}
+broadhipp_pre <- lmer(z_ers_Hipp ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadhipp_pre)
+```
+
+```{r}
+confint(broadhipp_pre, method="Wald")
+```
+
+```{r}
+broadhipp_mmeans <- emmeans(broadhipp_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadhipp_mmeans))
+```
+
+```{r}
+broadHipp_mmeans_tidy <- tidy(broadhipp_mmeans, conf.int = T)
+broadHipp_mmeans_tidy$preJudgmentChar <- ''
+broadHipp_mmeans_tidy$preJudgmentChar[broadHipp_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadHipp_mmeans_tidy$preJudgmentChar[broadHipp_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadHipp_mmeans_tidy$mask <- 'Hipp'
+```
+
+```{r}
+fdr_corr = list()
+fdr_corr_int = list()
+broadlPFC_pre <- lmer(z_ers_lPFC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(broadlPFC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(broadlPFC_pre))[,"Pr(>|t|)"][1])
+summary(broadlPFC_pre)
+```
+
+```{r}
+confint(broadlPFC_pre, method="Wald")
+```
+
+```{r}
+broadlPFC_mmeans <- emmeans(broadlPFC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadlPFC_mmeans))
+```
+
+```{r}
+broadlPFC_mmeans_tidy <- tidy(broadlPFC_mmeans, conf.int = T)
+broadlPFC_mmeans_tidy$preJudgmentChar <- ''
+broadlPFC_mmeans_tidy$preJudgmentChar[broadlPFC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadlPFC_mmeans_tidy$preJudgmentChar[broadlPFC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadlPFC_mmeans_tidy$mask <- 'd&lPFC'
+```
+
+```{r}
+broadLPC_pre <- lmer(z_ers_LPC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num),
+               data = broad_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(broadLPC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(broadLPC_pre))[,"Pr(>|t|)"][1])
+summary(broadLPC_pre)
+```
+
+```{r}
+confint(broadLPC_pre, method="Wald")
+```
+
+```{r}
+broadLPC_mmeans <- emmeans(broadLPC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadLPC_mmeans))
+```
+
+```{r}
+broadLPC_mmeans_tidy <- tidy(broadLPC_mmeans, conf.int = T)
+broadLPC_mmeans_tidy$preJudgmentChar <- ''
+broadLPC_mmeans_tidy$preJudgmentChar[broadLPC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadLPC_mmeans_tidy$preJudgmentChar[broadLPC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadLPC_mmeans_tidy$mask <- 'LPC'
+```
+
+```{r}
+broadvmPFC_pre <- lmer(z_ers_vmPFC_posthoc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(broadvmPFC_pre))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(broadvmPFC_pre))[,"Pr(>|t|)"][1])
+summary(broadvmPFC_pre)
+```
+
+```{r}
+confint(broadvmPFC_pre, method="Wald")
+```
+
+```{r}
+broadvmPFC_mmeans <- emmeans(broadvmPFC_pre, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadvmPFC_mmeans))
+```
+
+```{r}
+broadvmPFC_mmeans_tidy <- tidy(broadvmPFC_mmeans, conf.int = T)
+broadvmPFC_mmeans_tidy$preJudgmentChar <- ''
+broadvmPFC_mmeans_tidy$preJudgmentChar[broadvmPFC_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadvmPFC_mmeans_tidy$preJudgmentChar[broadvmPFC_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadvmPFC_mmeans_tidy$mask <- 'vmPFC'
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_int)
+print(p.adjust(fdr_corr_int, method = 'fdr'))
+```
+
+### Graphing: All
+
+```{r}
+broad_mmeans_tidy <- rbind(broadmPar_mmeans_tidy, broadMTLcortex_mmeans_tidy, broadfusiform_mmeans_tidy, broadHipp_mmeans_tidy, broadLPC_mmeans_tidy, 
+                           broadvmPFC_mmeans_tidy, broadlPFC_mmeans_tidy)
+```
+
+```{r}
+ord <- c('Hipp', 'MTLcortex', 'fusiform', 'mPar', 'LPC','d&lPFC','vmPFC')
+broad_mmeans_tidy$mask <- factor(broad_mmeans_tidy$mask, levels = ord)
+
+ggplot(broad_mmeans_tidy, aes(x = mask, y = estimate, colour = preJudgmentChar)) + 
+  ylab('ERS') + 
+  xlab('ROI') + 
+  ggtitle('Broad ERS by Preceding Judgment') + 
+  ylim(-0.01, 0.03) + 
+  # geom_hline(yintercept = summary(aa_resid_model)$coefficients[,1]) + 
+  geom_pointrange(aes(x = mask, ymin=estimate-std.error, ymax=estimate+std.error), lwd=1, fatten=2.5,position=position_dodge(.4)) + 
+  theme_classic() + 
+  scale_color_manual(values=c("#084081", "#2b8cbe"), name = "Preceding\nJudgment") +
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(axis.text.x = element_text(angle = 30)) + 
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```
+
+# Associative Accuracy & RT Control Models
+
+## Scaling RT Across Probe Trials
+
+```{r}
+all_data <- read.csv('./csv/retevs_behavioral.csv')
+all_data$ret_index <- all_data$trial_num + (all_data$block_num-1)*72
+all_data <- subset(all_data, select = c('sub_num', 'ret_index', 'ret_RT', 'word_corrAns'), is.finite(ret_RT) & is.finite(word_corrAns))
+```
+
+```{r}
+all_data <- ddply(all_data, c("sub_num"), transform, scaled_RT = scale(ret_RT))
+```
+
+```{r}
+cat_all <- merge(cat_all, all_data, by = c('sub_num', 'ret_index'))
+item_all <- merge(item_all, all_data, by = c('sub_num', 'ret_index'))
+broad_all <- merge(broad_all, all_data, by = c('sub_num', 'ret_index'))
+```
+
+### Category Level
+
+```{r}
+catmPar_pre_corr <- lmer(z_ers_mPar ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = cat_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catmPar_pre_corr)
+```
+
+```{r}
+confint(catmPar_pre_corr, method="Wald")
+```
+
+```{r}
+catmPar_pre_corr_mmeans <- emmeans(catmPar_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catmPar_pre_corr_mmeans))
+```
+
+```{r}
+catmPar_corr_mmeans_tidy <- tidy(catmPar_pre_corr_mmeans, conf.int = T)
+catmPar_corr_mmeans_tidy$preJudgmentChar <- ''
+catmPar_corr_mmeans_tidy$preJudgmentChar[catmPar_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catmPar_corr_mmeans_tidy$preJudgmentChar[catmPar_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catmPar_corr_mmeans_tidy$mask <- 'mPar control'
+```
+
+```{r}
+catMTL_pre_corr <- lmer(z_ers_MTLcortex ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = cat_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catMTL_pre_corr)
+```
+
+```{r}
+confint(catMTL_pre_corr, method="Wald")
+```
+
+```{r}
+catMTL_pre_corr_mmeans <- emmeans(catMTL_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catMTL_pre_corr_mmeans))
+```
+
+```{r}
+catMTL_corr_mmeans_tidy <- tidy(catMTL_pre_corr_mmeans, conf.int = T)
+catMTL_corr_mmeans_tidy$preJudgmentChar <- ''
+catMTL_corr_mmeans_tidy$preJudgmentChar[catMTL_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catMTL_corr_mmeans_tidy$preJudgmentChar[catMTL_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catMTL_corr_mmeans_tidy$mask <- 'MTL control'
+```
+
+```{r}
+catfusi_pre_corr <- lmer(z_ers_fusiform ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = cat_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catfusi_pre_corr)
+```
+
+```{r}
+confint(catfusi_pre_corr, method="Wald")
+```
+
+```{r}
+catfusi_pre_corr_mmeans <- emmeans(catfusi_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catfusi_pre_corr_mmeans))
+```
+
+```{r}
+catfusi_corr_mmeans_tidy <- tidy(catfusi_pre_corr_mmeans, conf.int = T)
+catfusi_corr_mmeans_tidy$preJudgmentChar <- ''
+catfusi_corr_mmeans_tidy$preJudgmentChar[catfusi_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catfusi_corr_mmeans_tidy$preJudgmentChar[catfusi_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catfusi_corr_mmeans_tidy$mask <- 'fusiform control'
+```
+
+```{r}
+catHipp_pre_corr <- lmer(z_ers_Hipp ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = cat_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(catHipp_pre_corr)
+```
+
+```{r}
+confint(catHipp_pre_corr, method="Wald")
+```
+
+```{r}
+catHipp_pre_corr_mmeans <- emmeans(catHipp_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catHipp_pre_corr_mmeans))
+```
+
+```{r}
+catHipp_corr_mmeans_tidy <- tidy(catHipp_pre_corr_mmeans, conf.int = T)
+catHipp_corr_mmeans_tidy$preJudgmentChar <- ''
+catHipp_corr_mmeans_tidy$preJudgmentChar[catHipp_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catHipp_corr_mmeans_tidy$preJudgmentChar[catHipp_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catHipp_corr_mmeans_tidy$mask <- 'Hipp control'
+```
+
+```{r}
+fdr_corr <- list()
+fdr_corr_int <- list()
+catlPFC_pre_corr <- lmer(z_ers_lPFC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = cat_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(catlPFC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(catlPFC_pre_corr))[,"Pr(>|t|)"][1])
+summary(catlPFC_pre_corr)
+```
+
+```{r}
+confint(catlPFC_pre_corr, method="Wald")
+```
+
+```{r}
+catlPFC_pre_corr_mmeans <- emmeans(catlPFC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catlPFC_pre_corr_mmeans))
+```
+
+```{r}
+catlPFC_corr_mmeans_tidy <- tidy(catlPFC_pre_corr_mmeans, conf.int = T)
+catlPFC_corr_mmeans_tidy$preJudgmentChar <- ''
+catlPFC_corr_mmeans_tidy$preJudgmentChar[catlPFC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catlPFC_corr_mmeans_tidy$preJudgmentChar[catlPFC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catlPFC_corr_mmeans_tidy$mask <- 'd&lPFC control'
+```
+
+```{r}
+catvmPFC_pre_corr <- lmer(z_ers_vmPFC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = cat_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(catvmPFC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(catvmPFC_pre_corr))[,"Pr(>|t|)"][1])
+summary(catvmPFC_pre_corr)
+```
+
+```{r}
+confint(catvmPFC_pre_corr, method="Wald")
+```
+
+```{r}
+catvmPFC_pre_corr_mmeans <- emmeans(catvmPFC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catvmPFC_pre_corr_mmeans))
+```
+
+```{r}
+catvmPFC_corr_mmeans_tidy <- tidy(catvmPFC_pre_corr_mmeans, conf.int = T)
+catvmPFC_corr_mmeans_tidy$preJudgmentChar <- ''
+catvmPFC_corr_mmeans_tidy$preJudgmentChar[catvmPFC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catvmPFC_corr_mmeans_tidy$preJudgmentChar[catvmPFC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catvmPFC_corr_mmeans_tidy$mask <- 'vmPFC control'
+```
+
+```{r}
+catLPC_pre_corr <- lmer(z_ers_LPC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = cat_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(catLPC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(catLPC_pre_corr))[,"Pr(>|t|)"][1])
+summary(catLPC_pre_corr)
+```
+
+```{r}
+confint(catLPC_pre_corr, method="Wald")
+```
+
+```{r}
+catLPC_pre_corr_mmeans <- emmeans(catLPC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(catLPC_pre_corr_mmeans))
+```
+
+```{r}
+catLPC_corr_mmeans_tidy <- tidy(catLPC_pre_corr_mmeans, conf.int = T)
+catLPC_corr_mmeans_tidy$preJudgmentChar <- ''
+catLPC_corr_mmeans_tidy$preJudgmentChar[catLPC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+catLPC_corr_mmeans_tidy$preJudgmentChar[catLPC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+catLPC_corr_mmeans_tidy$mask <- 'LPC control'
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_int)
+print(p.adjust(fdr_corr_int, method = 'fdr'))
+```
+
+### Category Table
+
+```{r}
+export_summs(catHipp_pre, catHipp_pre_corr, catMTL_pre, catMTL_pre_corr, catfusi_pre, 
+             catfusi_pre_corr, catmPar_pre, catmPar_pre_corr, number_format = "%.2g", 
+             model.names = c('Hipp', 'Hipp Control', 'MTLCortex', 'MTLCortex Control',
+                             'Fusiform', 'Fusiform Control', 'mPar', 
+                             'mPar Control'), 
+             to.file = "docx", file.name = "./tables/catERS_ap.docx")
+```
+
+```{r}
+ap_cat_mmeans_table <- rbind(catHipp_mmeans_tidy, catHipp_corr_mmeans_tidy, catMTLcortex_mmeans_tidy, catMTL_corr_mmeans_tidy, catfusiform_mmeans_tidy, catfusi_corr_mmeans_tidy, catmPar_mmeans_tidy, catmPar_corr_mmeans_tidy)
+write.csv(ap_cat_mmeans_table, './tables/catERS_ap_mmeans.csv')
+```
+
+```{r}
+export_summs(catLPC_pre, catLPC_pre_corr, catlPFC_pre, catlPFC_pre_corr, catvmPFC_pre, 
+             catvmPFC_pre_corr, number_format = "%.2g", 
+             model.names = c('LPC', 'LPC Control', 'lPFC', 'lPFC Control', 'vmPFC', 'vmPFC Control'), 
+             to.file = "docx", file.name = "./tables/catERS_ph.docx")
+```
+
+```{r}
+ph_cat_mmeans_table <- rbind(catlPFC_mmeans_tidy, catlPFC_corr_mmeans_tidy, catLPC_mmeans_tidy, catLPC_corr_mmeans_tidy, catvmPFC_mmeans_tidy, catvmPFC_corr_mmeans_tidy)
+write.csv(ph_cat_mmeans_table, './tables/catERS_ph_mmeans.csv')
+```
+
+### Item Level
+
+```{r}
+itemmPar_pre_corr <- lmer(z_ers_mPar ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = item_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemmPar_pre_corr)
+```
+
+```{r}
+confint(itemmPar_pre_corr, method="Wald")
+```
+
+```{r}
+itemmPar_pre_corr_mmeans <- emmeans(itemmPar_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemmPar_pre_corr_mmeans))
+```
+
+```{r}
+itemmPar_corr_mmeans_tidy <- tidy(itemmPar_pre_corr_mmeans, conf.int = T)
+itemmPar_corr_mmeans_tidy$preJudgmentChar <- ''
+itemmPar_corr_mmeans_tidy$preJudgmentChar[itemmPar_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemmPar_corr_mmeans_tidy$preJudgmentChar[itemmPar_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemmPar_corr_mmeans_tidy$mask <- 'mPar control'
+```
+
+```{r}
+itemMTL_pre_corr <- lmer(z_ers_MTLcortex ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = item_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemMTL_pre_corr)
+```
+
+```{r}
+confint(itemMTL_pre_corr, method="Wald")
+```
+
+```{r}
+itemMTL_pre_corr_mmeans <- emmeans(itemMTL_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemMTL_pre_corr_mmeans))
+```
+
+```{r}
+itemMTL_corr_mmeans_tidy <- tidy(itemMTL_pre_corr_mmeans, conf.int = T)
+itemMTL_corr_mmeans_tidy$preJudgmentChar <- ''
+itemMTL_corr_mmeans_tidy$preJudgmentChar[itemMTL_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemMTL_corr_mmeans_tidy$preJudgmentChar[itemMTL_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemMTL_corr_mmeans_tidy$mask <- 'MTL control'
+```
+
+```{r}
+itemfusi_pre_corr <- lmer(z_ers_fusiform ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = item_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemfusi_pre_corr)
+```
+
+```{r}
+confint(itemfusi_pre_corr, method="Wald")
+```
+
+```{r}
+itemfusi_pre_corr_mmeans <- emmeans(itemfusi_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemfusi_pre_corr_mmeans))
+```
+
+```{r}
+itemfusi_corr_mmeans_tidy <- tidy(itemfusi_pre_corr_mmeans, conf.int = T)
+itemfusi_corr_mmeans_tidy$preJudgmentChar <- ''
+itemfusi_corr_mmeans_tidy$preJudgmentChar[itemfusi_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemfusi_corr_mmeans_tidy$preJudgmentChar[itemfusi_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemfusi_corr_mmeans_tidy$mask <- 'fusiform control'
+```
+
+```{r}
+itemhipp_pre_corr <- lmer(z_ers_Hipp ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = item_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(itemhipp_pre_corr)
+```
+
+```{r}
+confint(itemhipp_pre_corr, method="Wald")
+```
+
+```{r}
+itemhipp_pre_corr_mmeans <- emmeans(itemhipp_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemhipp_pre_corr_mmeans))
+```
+
+```{r}
+itemhipp_corr_mmeans_tidy <- tidy(itemhipp_pre_corr_mmeans, conf.int = T)
+itemhipp_corr_mmeans_tidy$preJudgmentChar <- ''
+itemhipp_corr_mmeans_tidy$preJudgmentChar[itemhipp_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemhipp_corr_mmeans_tidy$preJudgmentChar[itemhipp_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemhipp_corr_mmeans_tidy$mask <- 'hipp control'
+```
+
+```{r}
+fdr_corr <- list()
+fdr_corr_int <- list()
+itemlPFC_pre_corr <- lmer(z_ers_lPFC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = item_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(itemlPFC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(itemlPFC_pre_corr))[,"Pr(>|t|)"][1])
+summary(itemlPFC_pre_corr)
+```
+
+```{r}
+confint(itemlPFC_pre_corr, method="Wald")
+```
+
+```{r}
+itemlPFC_pre_corr_mmeans <- emmeans(itemlPFC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemlPFC_pre_corr_mmeans))
+```
+
+```{r}
+itemlPFC_corr_mmeans_tidy <- tidy(itemlPFC_pre_corr_mmeans, conf.int = T)
+itemlPFC_corr_mmeans_tidy$preJudgmentChar <- ''
+itemlPFC_corr_mmeans_tidy$preJudgmentChar[itemlPFC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemlPFC_corr_mmeans_tidy$preJudgmentChar[itemlPFC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemlPFC_corr_mmeans_tidy$mask <- 'd&lPFC control'
+```
+
+```{r}
+itemvmPFC_pre_corr <- lmer(z_ers_vmPFC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = item_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(itemvmPFC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(itemvmPFC_pre_corr))[,"Pr(>|t|)"][1])
+summary(itemvmPFC_pre_corr)
+```
+
+```{r}
+confint(itemvmPFC_pre_corr, method="Wald")
+```
+
+```{r}
+itemvmPFC_pre_corr_mmeans <- emmeans(itemvmPFC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemvmPFC_pre_corr_mmeans))
+```
+
+```{r}
+itemvmPFC_corr_mmeans_tidy <- tidy(itemvmPFC_pre_corr_mmeans, conf.int = T)
+itemvmPFC_corr_mmeans_tidy$preJudgmentChar <- ''
+itemvmPFC_corr_mmeans_tidy$preJudgmentChar[itemvmPFC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemvmPFC_corr_mmeans_tidy$preJudgmentChar[itemvmPFC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemvmPFC_corr_mmeans_tidy$mask <- 'vmPFC control'
+```
+
+```{r}
+itemLPC_pre_corr <- lmer(z_ers_LPC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = item_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(itemLPC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(itemLPC_pre_corr))[,"Pr(>|t|)"][1])
+summary(itemLPC_pre_corr)
+```
+
+```{r}
+confint(itemLPC_pre_corr, method="Wald")
+```
+
+```{r}
+itemLPC_pre_corr_mmeans <- emmeans(itemLPC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(itemLPC_pre_corr_mmeans))
+```
+
+```{r}
+itemLPC_corr_mmeans_tidy <- tidy(itemLPC_pre_corr_mmeans, conf.int = T)
+itemLPC_corr_mmeans_tidy$preJudgmentChar <- ''
+itemLPC_corr_mmeans_tidy$preJudgmentChar[itemLPC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+itemLPC_corr_mmeans_tidy$preJudgmentChar[itemLPC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+itemLPC_corr_mmeans_tidy$mask <- 'LPC control'
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_int)
+print(p.adjust(fdr_corr_int, method = 'fdr'))
+```
+
+### Item Table
+
+```{r}
+export_summs(itemHipp_pre, itemhipp_pre_corr, itemMTL_pre, itemMTL_pre_corr, itemfusi_pre, 
+             itemfusi_pre_corr, itemmPar_pre, itemmPar_pre_corr, number_format = "%.2g", 
+             model.names = c('Hipp', 'Hipp Control', 'MTLCortex', 'MTLCortex Control',
+                             'Fusiform', 'Fusiform Control', 'mPar', 
+                             'mPar Control'), 
+             to.file = "docx", file.name = "./tables/itemERS_ap.docx")
+```
+
+```{r}
+ap_item_mmeans_table <- rbind(itemHipp_mmeans_tidy, itemhipp_corr_mmeans_tidy, itemMTLcortex_mmeans_tidy, itemMTL_corr_mmeans_tidy, itemfusiform_mmeans_tidy, itemfusi_corr_mmeans_tidy, itemmPar_mmeans_tidy, itemmPar_corr_mmeans_tidy)
+write.csv(ap_item_mmeans_table, './tables/itemERS_ap_mmeans.csv')
+```
+
+```{r}
+export_summs(itemLPC_pre, itemLPC_pre_corr, itemlPFC_pre, itemlPFC_pre_corr, itemvmPFC_pre, 
+             itemvmPFC_pre_corr, number_format = "%.2g", 
+             model.names = c('LPC', 'LPC Control', 'lPFC', 'lPFC Control', 'vmPFC', 'vmPFC Control'), 
+             to.file = "docx", file.name = "./tables/itemERS_ph.docx")
+```
+
+```{r}
+ph_item_mmeans_table <- rbind(itemlPFC_mmeans_tidy, itemlPFC_corr_mmeans_tidy, itemLPC_mmeans_tidy, itemLPC_corr_mmeans_tidy, itemvmPFC_mmeans_tidy, itemvmPFC_corr_mmeans_tidy)
+write.csv(ph_item_mmeans_table, './tables/itemERS_ph_mmeans.csv')
+```
+
+### Broad Level
+
+```{r}
+broadmPar_pre_corr <- lmer(z_ers_mPar ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = broad_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadmPar_pre_corr)
+```
+
+```{r}
+confint(broadmPar_pre_corr, method="Wald")
+```
+
+```{r}
+broadmPar_pre_corr_mmeans <- emmeans(broadmPar_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadmPar_pre_corr_mmeans))
+```
+
+```{r}
+broadmPar_corr_mmeans_tidy <- tidy(broadmPar_pre_corr_mmeans, conf.int = T)
+broadmPar_corr_mmeans_tidy$preJudgmentChar <- ''
+broadmPar_corr_mmeans_tidy$preJudgmentChar[broadmPar_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadmPar_corr_mmeans_tidy$preJudgmentChar[broadmPar_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadmPar_corr_mmeans_tidy$mask <- 'mPar control'
+```
+
+```{r}
+broadMTL_pre_corr <- lmer(z_ers_MTLcortex ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = broad_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadMTL_pre_corr)
+```
+
+```{r}
+confint(broadMTL_pre_corr, method="Wald")
+```
+
+```{r}
+broadMTL_pre_corr_mmeans <- emmeans(broadMTL_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadMTL_pre_corr_mmeans))
+```
+
+```{r}
+broadMTL_corr_mmeans_tidy <- tidy(broadMTL_pre_corr_mmeans, conf.int = T)
+broadMTL_corr_mmeans_tidy$preJudgmentChar <- ''
+broadMTL_corr_mmeans_tidy$preJudgmentChar[broadMTL_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadMTL_corr_mmeans_tidy$preJudgmentChar[broadMTL_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadMTL_corr_mmeans_tidy$mask <- 'MTL control'
+```
+
+```{r}
+broadfusi_pre_corr <- lmer(z_ers_fusiform ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = broad_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadfusi_pre_corr)
+```
+
+```{r}
+confint(broadfusi_pre_corr, method="Wald")
+```
+
+```{r}
+broadfusi_pre_corr_mmeans <- emmeans(broadfusi_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadfusi_pre_corr_mmeans))
+```
+
+```{r}
+broadfusi_corr_mmeans_tidy <- tidy(broadfusi_pre_corr_mmeans, conf.int = T)
+broadfusi_corr_mmeans_tidy$preJudgmentChar <- ''
+broadfusi_corr_mmeans_tidy$preJudgmentChar[broadfusi_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadfusi_corr_mmeans_tidy$preJudgmentChar[broadfusi_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadfusi_corr_mmeans_tidy$mask <- 'fusiform control'
+```
+
+```{r}
+broadhipp_pre_corr <- lmer(z_ers_Hipp ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = broad_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(broadhipp_pre_corr)
+```
+
+```{r}
+confint(broadhipp_pre_corr, method="Wald")
+```
+
+```{r}
+broadhipp_pre_corr_mmeans <- emmeans(broadhipp_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadhipp_pre_corr_mmeans))
+```
+
+```{r}
+broadhipp_corr_mmeans_tidy <- tidy(broadhipp_pre_corr_mmeans, conf.int = T)
+broadhipp_corr_mmeans_tidy$preJudgmentChar <- ''
+broadhipp_corr_mmeans_tidy$preJudgmentChar[broadhipp_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadhipp_corr_mmeans_tidy$preJudgmentChar[broadhipp_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadhipp_corr_mmeans_tidy$mask <- 'hipp control'
+```
+
+```{r}
+fdr_corr <- list()
+fdr_corr_int <- list()
+broadlPFC_pre_corr <- lmer(z_ers_lPFC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = broad_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(broadlPFC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(broadlPFC_pre_corr))[,"Pr(>|t|)"][1])
+summary(broadlPFC_pre_corr)
+```
+
+```{r}
+confint(broadlPFC_pre_corr, method="Wald")
+```
+
+```{r}
+broadlPFC_pre_corr_mmeans <- emmeans(broadlPFC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadlPFC_pre_corr_mmeans))
+```
+
+```{r}
+broadlPFC_corr_mmeans_tidy <- tidy(broadlPFC_pre_corr_mmeans, conf.int = T)
+broadlPFC_corr_mmeans_tidy$preJudgmentChar <- ''
+broadlPFC_corr_mmeans_tidy$preJudgmentChar[broadlPFC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadlPFC_corr_mmeans_tidy$preJudgmentChar[broadlPFC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadlPFC_corr_mmeans_tidy$mask <- 'lPFC control'
+```
+
+```{r}
+broadvmPFC_pre_corr <- lmer(z_ers_vmPFC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = broad_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(broadvmPFC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(broadvmPFC_pre_corr))[,"Pr(>|t|)"][1])
+summary(broadvmPFC_pre_corr)
+```
+
+```{r}
+confint(broadvmPFC_pre_corr, method="Wald")
+```
+
+```{r}
+broadvmPFC_pre_corr_mmeans <- emmeans(broadvmPFC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadvmPFC_pre_corr_mmeans))
+```
+
+```{r}
+broadvmPFC_corr_mmeans_tidy <- tidy(broadvmPFC_pre_corr_mmeans, conf.int = T)
+broadvmPFC_corr_mmeans_tidy$preJudgmentChar <- ''
+broadvmPFC_corr_mmeans_tidy$preJudgmentChar[broadvmPFC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadvmPFC_corr_mmeans_tidy$preJudgmentChar[broadvmPFC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadvmPFC_corr_mmeans_tidy$mask <- 'vmPFC control'
+```
+
+```{r}
+broadLPC_pre_corr <- lmer(z_ers_LPC_posthoc ~ preJudgment + source_acc + scaled_RT + RespBias + (preJudgment + source_acc + scaled_RT + RespBias || sub_num), 
+              data = broad_all, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+              control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(broadLPC_pre_corr))[,"Pr(>|t|)"][2])
+fdr_corr_int <- append(fdr_corr_int, coef(summary(broadLPC_pre_corr))[,"Pr(>|t|)"][1])
+summary(broadLPC_pre_corr)
+```
+
+```{r}
+confint(broadLPC_pre_corr, method="Wald")
+```
+
+```{r}
+broadLPC_pre_corr_mmeans <- emmeans(broadLPC_pre_corr, specs = c('preJudgment', 'RespBias'), at = list(preJudgment = c(-1, 1), RespBias = 0), adjust = 'fdr', type = 'response')
+print(test(broadLPC_pre_corr_mmeans))
+```
+
+```{r}
+broadLPC_corr_mmeans_tidy <- tidy(broadLPC_pre_corr_mmeans, conf.int = T)
+broadLPC_corr_mmeans_tidy$preJudgmentChar <- ''
+broadLPC_corr_mmeans_tidy$preJudgmentChar[broadLPC_corr_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+broadLPC_corr_mmeans_tidy$preJudgmentChar[broadLPC_corr_mmeans_tidy$preJudgment == -1] <- 'Novel'
+broadLPC_corr_mmeans_tidy$mask <- 'LPC control'
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_int)
+print(p.adjust(fdr_corr_int, method = 'fdr'))
+```
+
+### Broad Table
+
+```{r}
+export_summs(broadhipp_pre, broadhipp_pre_corr, broadMTL_pre, broadMTL_pre_corr, broadfusi_pre, 
+             broadfusi_pre_corr, broadmPar_pre, broadmPar_pre_corr, number_format = "%.2g", 
+             model.names = c('Hipp', 'Hipp Control', 'MTLCortex', 'MTLCortex Control',
+                             'Fusiform', 'Fusiform Control', 'mPar', 
+                             'mPar Control'), 
+             to.file = "docx", file.name = "./tables/broadERS_ap.docx")
+```
+
+```{r}
+ap_broad_mmeans_table <- rbind(broadHipp_mmeans_tidy, broadhipp_corr_mmeans_tidy, broadMTLcortex_mmeans_tidy, broadMTL_corr_mmeans_tidy, broadfusiform_mmeans_tidy, broadfusi_corr_mmeans_tidy, broadmPar_mmeans_tidy, broadmPar_corr_mmeans_tidy)
+write.csv(ap_broad_mmeans_table, './tables/broadERS_ap_mmeans.csv')
+```
+
+```{r}
+export_summs(broadLPC_pre, broadLPC_pre_corr, broadlPFC_pre, broadlPFC_pre_corr, broadvmPFC_pre, 
+             broadvmPFC_pre_corr, number_format = "%.2g", 
+             model.names = c('LPC', 'LPC Control', 'lPFC', 'lPFC Control', 'vmPFC', 'vmPFC Control'), 
+             to.file = "docx", file.name = "./tables/broadERS_ph.docx")
+```
+
+```{r}
+ph_broad_mmeans_table <- rbind(broadlPFC_mmeans_tidy, broadlPFC_corr_mmeans_tidy, broadLPC_mmeans_tidy, broadLPC_corr_mmeans_tidy, broadvmPFC_mmeans_tidy, broadvmPFC_corr_mmeans_tidy)
+write.csv(ph_broad_mmeans_table, './tables/broadERS_ph_mmeans.csv')
+```
+
+# Mixed Effects Models: Grouped ERS
+
+## Category ERS
+
+```{r}
+mParCat_g <- lmer(z_ers_mPar ~ RespBias + (RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(mParCat_g)
+```
+
+```{r}
+confint(mParCat_g, method="Wald")
+```
+
+```{r}
+mPar_mmeans <- list()
+mPar_mmeans <- append(mPar_mmeans, coef(summary(mParCat_g))[,"Estimate"][1])
+mPar_mmeans <- append(mPar_mmeans, coef(summary(mParCat_g))[,"Std. Error"][1])
+mPar_mmeans <- append(mPar_mmeans, 'mPar')
+```
+
+```{r}
+MTLCat_g <- lmer(z_ers_MTLcortex ~ RespBias + (RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(MTLCat_g)
+```
+
+```{r}
+confint(MTLCat_g, method="Wald")
+```
+
+```{r}
+MTLcortex_mmeans <- list()
+MTLcortex_mmeans <- append(MTLcortex_mmeans, coef(summary(MTLCat_g))[,"Estimate"][1])
+MTLcortex_mmeans <- append(MTLcortex_mmeans, coef(summary(MTLCat_g))[,"Std. Error"][1])
+MTLcortex_mmeans <- append(MTLcortex_mmeans, 'MTLcortex')
+```
+
+```{r}
+fusiformCat_g <- lmer(z_ers_fusiform ~ RespBias + (RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(fusiformCat_g)
+```
+
+```{r}
+confint(fusiformCat_g, method="Wald")
+```
+
+```{r}
+fusiform_mmeans <- list()
+fusiform_mmeans <- append(fusiform_mmeans, coef(summary(fusiformCat_g))[,"Estimate"][1])
+fusiform_mmeans <- append(fusiform_mmeans, coef(summary(fusiformCat_g))[,"Std. Error"][1])
+fusiform_mmeans <- append(fusiform_mmeans, 'fusiform')
+```
+
+```{r}
+HippCat_g <- lmer(z_ers_Hipp ~ RespBias + (RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(HippCat_g)
+```
+
+```{r}
+confint(HippCat_g, method="Wald")
+```
+
+```{r}
+Hipp_mmeans <- list()
+Hipp_mmeans <- append(Hipp_mmeans, coef(summary(HippCat_g))[,"Estimate"][1])
+Hipp_mmeans <- append(Hipp_mmeans, coef(summary(HippCat_g))[,"Std. Error"][1])
+Hipp_mmeans <- append(Hipp_mmeans, 'Hipp')
+```
+
+```{r}
+fdr_corr <- list()
+lPFCCat_g <- lmer(z_ers_lPFC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(lPFCCat_g))[,"Pr(>|t|)"][1])
+summary(lPFCCat_g)
+```
+
+```{r}
+confint(lPFCCat_g, method="Wald")
+```
+
+```{r}
+lPFC_mmeans <- list()
+lPFC_mmeans <- append(lPFC_mmeans, coef(summary(lPFCCat_g))[,"Estimate"][1])
+lPFC_mmeans <- append(lPFC_mmeans, coef(summary(lPFCCat_g))[,"Std. Error"][1])
+lPFC_mmeans <- append(lPFC_mmeans, 'd&lPFC')
+```
+
+```{r}
+vmPFCCat_g <- lmer(z_ers_vmPFC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(vmPFCCat_g))[,"Pr(>|t|)"][1])
+summary(vmPFCCat_g)
+```
+
+```{r}
+confint(vmPFCCat_g, method="Wald")
+```
+
+```{r}
+vmPFC_mmeans <- list()
+vmPFC_mmeans <- append(vmPFC_mmeans, coef(summary(vmPFCCat_g))[,"Estimate"][1])
+vmPFC_mmeans <- append(vmPFC_mmeans, coef(summary(vmPFCCat_g))[,"Std. Error"][1])
+vmPFC_mmeans <- append(vmPFC_mmeans, 'vmPFC')
+```
+
+```{r}
+LPCCat_g <- lmer(z_ers_LPC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(LPCCat_g))[,"Pr(>|t|)"][1])
+summary(LPCCat_g)
+```
+
+```{r}
+confint(LPCCat_g, method="Wald")
+```
+
+```{r}
+LPC_mmeans <- list()
+LPC_mmeans <- append(LPC_mmeans, coef(summary(LPCCat_g))[,"Estimate"][1])
+LPC_mmeans <- append(LPC_mmeans, coef(summary(LPCCat_g))[,"Std. Error"][1])
+LPC_mmeans <- append(LPC_mmeans, 'LPC')
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+### Category Table
+
+```{r}
+export_summs(HippCat_g, MTLCat_g, fusiformCat_g, mParCat_g, LPCCat_g, lPFCCat_g, vmPFCCat_g, number_format = "%.2g", 
+            model.names = c('Hipp', 'MTLCortex', 'Fusiform', 'mPar', 'LPC', 'd&lPFC', 'vmPFC'), to.file='docx', 
+            file.name = 'catgrouped.docx')
+```
+
+### Graphing Model Estimates: All
+
+```{r}
+cat_grouped_mmeans <- data.frame(rbind(mPar_mmeans, MTLcortex_mmeans, fusiform_mmeans, Hipp_mmeans, LPC_mmeans, lPFC_mmeans, vmPFC_mmeans))
+cat_grouped_mmeans <- rename(cat_grouped_mmeans, estimate = X.Intercept., std.error = X.Intercept..1, mask = V3)
+cat_grouped_mmeans$estimate <- as.numeric(cat_grouped_mmeans$estimate)
+cat_grouped_mmeans$std.error <- as.numeric(cat_grouped_mmeans$std.error)
+```
+
+```{r}
+ord <- c('Hipp', 'MTLcortex', 'fusiform', 'mPar', 'LPC', 'd&lPFC', 'vmPFC')
+cat_grouped_mmeans$mask <- factor(cat_grouped_mmeans$mask, levels = ord)
+
+ggplot(cat_grouped_mmeans, aes(x = mask, y = estimate)) + 
+  ylab('ERS') + 
+  xlab('ROI') + 
+  ggtitle('Category Information') + 
+  ylim(-0.0025, 0.015) + 
+  # geom_hline(yintercept = summary(aa_resid_model)$coefficients[,1]) + 
+  geom_pointrange(aes(x = mask, ymin=estimate-std.error, ymax=estimate+std.error), lwd=1, fatten=2.5,position=position_dodge(.4)) + 
+  theme_classic() + 
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(axis.text.x = element_text(angle = 30)) + 
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```
+
+## Item ERS
+
+```{r}
+mParItem_g <- lmer(z_ers_mPar ~ RespBias + (RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(mParItem_g)
+```
+
+```{r}
+confint(mParItem_g, method="Wald")
+```
+
+```{r}
+mPar_mmeans <- list()
+mPar_mmeans <- append(mPar_mmeans, coef(summary(mParItem_g))[,"Estimate"][1])
+mPar_mmeans <- append(mPar_mmeans, coef(summary(mParItem_g))[,"Std. Error"][1])
+mPar_mmeans <- append(mPar_mmeans, 'mPar')
+```
+
+```{r}
+MTLItem_g <- lmer(z_ers_MTLcortex ~ RespBias + (RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(MTLItem_g)
+```
+
+```{r}
+confint(MTLItem_g, method="Wald")
+```
+
+```{r}
+MTLcortex_mmeans <- list()
+MTLcortex_mmeans <- append(MTLcortex_mmeans, coef(summary(MTLItem_g))[,"Estimate"][1])
+MTLcortex_mmeans <- append(MTLcortex_mmeans, coef(summary(MTLItem_g))[,"Std. Error"][1])
+MTLcortex_mmeans <- append(MTLcortex_mmeans, 'MTLcortex')
+
+```
+
+```{r}
+fusiformItem_g <- lmer(z_ers_fusiform ~ RespBias + (RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(fusiformItem_g)
+```
+
+```{r}
+confint(fusiformItem_g, method="Wald")
+```
+
+```{r}
+fusiform_mmeans <- list()
+fusiform_mmeans <- append(fusiform_mmeans, coef(summary(fusiformItem_g))[,"Estimate"][1])
+fusiform_mmeans <- append(fusiform_mmeans, coef(summary(fusiformItem_g))[,"Std. Error"][1])
+fusiform_mmeans <- append(fusiform_mmeans, 'fusiform')
+```
+
+```{r}
+HippItem_g <- lmer(z_ers_Hipp ~RespBias + (RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(HippItem_g)
+```
+
+```{r}
+confint(HippItem_g, method="Wald")
+```
+
+```{r}
+Hipp_mmeans <- list()
+Hipp_mmeans <- append(Hipp_mmeans, coef(summary(HippItem_g))[,"Estimate"][1])
+Hipp_mmeans <- append(Hipp_mmeans, coef(summary(HippItem_g))[,"Std. Error"][1])
+Hipp_mmeans <- append(Hipp_mmeans, 'Hipp')
+```
+
+```{r}
+fdr_corr <- list()
+lPFCItem_g <- lmer(z_ers_lPFC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(lPFCItem_g))[,"Pr(>|t|)"][1])
+summary(lPFCItem_g)
+```
+
+```{r}
+confint(lPFCItem_g, method="Wald")
+```
+
+```{r}
+lPFC_mmeans <- list()
+lPFC_mmeans <- append(lPFC_mmeans, coef(summary(lPFCItem_g))[,"Estimate"][1])
+lPFC_mmeans <- append(lPFC_mmeans, coef(summary(lPFCItem_g))[,"Std. Error"][1])
+lPFC_mmeans <- append(lPFC_mmeans, 'd&lPFC')
+```
+
+```{r}
+vmPFCItem_g <- lmer(z_ers_vmPFC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(vmPFCItem_g))[,"Pr(>|t|)"][1])
+summary(vmPFCItem_g)
+```
+
+```{r}
+confint(vmPFCItem_g, method="Wald")
+```
+
+```{r}
+vmPFC_mmeans <- list()
+vmPFC_mmeans <- append(vmPFC_mmeans, coef(summary(vmPFCItem_g))[,"Estimate"][1])
+vmPFC_mmeans <- append(vmPFC_mmeans, coef(summary(vmPFCItem_g))[,"Std. Error"][1])
+vmPFC_mmeans <- append(vmPFC_mmeans, 'vmPFC')
+```
+
+```{r}
+LPCItem_g <- lmer(z_ers_LPC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = item_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(LPCItem_g))[,"Pr(>|t|)"][1])
+summary(LPCItem_g)
+```
+
+```{r}
+confint(LPCItem_g, method="Wald")
+```
+
+```{r}
+LPC_mmeans <- list()
+LPC_mmeans <- append(LPC_mmeans, coef(summary(LPCItem_g))[,"Estimate"][1])
+LPC_mmeans <- append(LPC_mmeans, coef(summary(LPCItem_g))[,"Std. Error"][1])
+LPC_mmeans <- append(LPC_mmeans, 'LPC')
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+### Item Table
+
+```{r}
+export_summs(HippItem_g, MTLItem_g, fusiformItem_g, mParItem_g, LPCItem_g, lPFCItem_g, vmPFCItem_g, number_format = "%.2g", 
+            model.names = c('Hipp', 'MTLCortex', 'Fusiform', 'mPar', 'LPC', 'd&lPFC', 'vmPFC'), to.file='docx', 
+            file.name = 'itemgrouped.docx')
+```
+
+### Graphing Model Estimates: All
+
+```{r}
+item_grouped_mmeans <- data.frame(rbind(mPar_mmeans, MTLcortex_mmeans, fusiform_mmeans, Hipp_mmeans, LPC_mmeans, lPFC_mmeans, vmPFC_mmeans))
+item_grouped_mmeans <- rename(item_grouped_mmeans, estimate = X.Intercept., std.error = X.Intercept..1, mask = V3)
+item_grouped_mmeans$estimate <- as.numeric(item_grouped_mmeans$estimate)
+item_grouped_mmeans$std.error <- as.numeric(item_grouped_mmeans$std.error)
+```
+
+```{r}
+ord <- c('Hipp', 'MTLcortex', 'fusiform', 'mPar', 'LPC', 'd&lPFC', 'vmPFC')
+item_grouped_mmeans$mask <- factor(item_grouped_mmeans$mask, levels = ord)
+
+ggplot(item_grouped_mmeans, aes(x = mask, y = estimate)) + 
+  ylab('ERS') + 
+  xlab('ROI') + 
+  ggtitle('Trial-Specific Information') + 
+  ylim(-0.0025, 0.015) + 
+  # geom_hline(yintercept = summary(aa_resid_model)$coefficients[,1]) + 
+  geom_pointrange(aes(x = mask, ymin=estimate-std.error, ymax=estimate+std.error), lwd=1, fatten=2.5,position=position_dodge(.4)) + 
+  theme_classic() + 
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(axis.text.x = element_text(angle=30))+
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+ggsave('./Figures/Draft1/item_grouped_mmeans_ALL.pdf')
+```
+
+## Broad ERS
+
+```{r}
+mParBroad_g <- lmer(z_ers_mPar ~ RespBias + (RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(mParBroad_g)
+```
+
+```{r}
+confint(mParBroad_g, method="Wald")
+```
+
+```{r}
+mPar_mmeans <- list()
+mPar_mmeans <- append(mPar_mmeans, coef(summary(mParBroad_g))[,"Estimate"][1])
+mPar_mmeans <- append(mPar_mmeans, coef(summary(mParBroad_g))[,"Std. Error"][1])
+mPar_mmeans <- append(mPar_mmeans, 'mPar')
+```
+
+```{r}
+MTLBroad_g <- lmer(z_ers_MTLcortex ~ RespBias + (RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(MTLBroad_g)
+```
+
+```{r}
+confint(MTLBroad_g, method="Wald")
+```
+
+```{r}
+MTLcortex_mmeans <- list()
+MTLcortex_mmeans <- append(MTLcortex_mmeans, coef(summary(MTLBroad_g))[,"Estimate"][1])
+MTLcortex_mmeans <- append(MTLcortex_mmeans, coef(summary(MTLBroad_g))[,"Std. Error"][1])
+MTLcortex_mmeans <- append(MTLcortex_mmeans, 'MTLcortex')
+```
+
+```{r}
+fusiformBroad_g <- lmer(z_ers_fusiform ~ RespBias + (RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(fusiformBroad_g)
+```
+
+```{r}
+confint(fusiformBroad_g, method="Wald")
+```
+
+```{r}
+fusiform_mmeans <- list()
+fusiform_mmeans <- append(fusiform_mmeans, coef(summary(fusiformBroad_g))[,"Estimate"][1])
+fusiform_mmeans <- append(fusiform_mmeans, coef(summary(fusiformBroad_g))[,"Std. Error"][1])
+fusiform_mmeans <- append(fusiform_mmeans, 'fusiform')
+```
+
+```{r}
+HippBroad_g <- lmer(z_ers_Hipp ~ RespBias + (RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(HippBroad_g)
+```
+
+```{r}
+confint(HippBroad_g, method="Wald")
+```
+
+```{r}
+Hipp_mmeans <- list()
+Hipp_mmeans <- append(Hipp_mmeans, coef(summary(HippBroad_g))[,"Estimate"][1])
+Hipp_mmeans <- append(Hipp_mmeans, coef(summary(HippBroad_g))[,"Std. Error"][1])
+Hipp_mmeans <- append(Hipp_mmeans, 'Hipp')
+```
+
+```{r}
+fdr_corr <- list()
+lPFCBroad_g <- lmer(z_ers_lPFC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(lPFCBroad_g))[,"Pr(>|t|)"][1])
+summary(lPFCBroad_g)
+```
+
+```{r}
+confint(lPFCBroad_g, method="Wald")
+```
+
+```{r}
+lPFC_mmeans <- list()
+lPFC_mmeans <- append(lPFC_mmeans, coef(summary(lPFCBroad_g))[,"Estimate"][1])
+lPFC_mmeans <- append(lPFC_mmeans, coef(summary(lPFCBroad_g))[,"Std. Error"][1])
+lPFC_mmeans <- append(lPFC_mmeans, 'd&lPFC')
+```
+
+```{r}
+vmPFCBroad_g <- lmer(z_ers_vmPFC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(vmPFCBroad_g))[,"Pr(>|t|)"][1])
+summary(vmPFCBroad_g)
+```
+
+```{r}
+confint(vmPFCBroad_g, method="Wald")
+```
+
+```{r}
+vmPFC_mmeans <- list()
+vmPFC_mmeans <- append(vmPFC_mmeans, coef(summary(vmPFCBroad_g))[,"Estimate"][1])
+vmPFC_mmeans <- append(vmPFC_mmeans, coef(summary(vmPFCBroad_g))[,"Std. Error"][1])
+vmPFC_mmeans <- append(vmPFC_mmeans, 'vmPFC')
+```
+
+```{r}
+LPCBroad_g <- lmer(z_ers_LPC_posthoc ~ RespBias + (RespBias || sub_num), 
+               data = broad_all, subset = (is.finite(source_acc) & rec_acc==1), control = lmerControl(optCtrl=list(maxeval=2e5)))
+fdr_corr <- append(fdr_corr, coef(summary(LPCBroad_g))[,"Pr(>|t|)"][1])
+summary(LPCBroad_g)
+```
+
+```{r}
+confint(LPCBroad_g, method="Wald")
+```
+
+```{r}
+LPC_mmeans <- list()
+LPC_mmeans <- append(LPC_mmeans, coef(summary(LPCBroad_g))[,"Estimate"][1])
+LPC_mmeans <- append(LPC_mmeans, coef(summary(LPCBroad_g))[,"Std. Error"][1])
+LPC_mmeans <- append(LPC_mmeans, 'LPC')
+```
+
+```{r}
+print(fdr_corr)
+print(p.adjust(fdr_corr, method = 'fdr'))
+```
+
+### Broad Table
+
+```{r}
+export_summs(HippBroad_g, MTLBroad_g, fusiformBroad_g, mParBroad_g, LPCBroad_g, lPFCBroad_g, vmPFCBroad_g, number_format = "%.2g", 
+            model.names = c('Hipp', 'MTLCortex', 'Fusiform', 'mPar', 'LPC', 'd&lPFC', 'vmPFC'), to.file='docx', 
+            file.name = 'broadgrouped.docx')
+```
+
+### Graphing Model Estimates: All
+
+```{r}
+broad_grouped_mmeans <- data.frame(rbind(mPar_mmeans, MTLcortex_mmeans, fusiform_mmeans, Hipp_mmeans, LPC_mmeans, lPFC_mmeans, vmPFC_mmeans))
+broad_grouped_mmeans <- rename(broad_grouped_mmeans, estimate = X.Intercept., std.error = X.Intercept..1, mask = V3)
+broad_grouped_mmeans$estimate <- as.numeric(broad_grouped_mmeans$estimate)
+broad_grouped_mmeans$std.error <- as.numeric(broad_grouped_mmeans$std.error)
+```
+
+```{r}
+ord <- c('Hipp', 'MTLcortex', 'fusiform', 'mPar', 'LPC', 'd&lPFC', 'vmPFC')
+broad_grouped_mmeans$mask <- factor(broad_grouped_mmeans$mask, levels = ord)
+
+ggplot(broad_grouped_mmeans, aes(x = mask, y = estimate)) + 
+  ylab('ERS') + 
+  xlab('ROI') + 
+  ggtitle('Broad ERS') + 
+  ylim(-0.003, 0.015) + 
+  # geom_hline(yintercept = summary(aa_resid_model)$coefficients[,1]) + 
+  geom_pointrange(aes(x = mask, ymin=estimate-std.error, ymax=estimate+std.error), lwd=1, fatten=2.5,position=position_dodge(.4)) + 
+  theme_classic() + 
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(axis.text.x = element_text(angle=30))+
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+ggsave('./Figures/Draft1/broad_grouped_mmeans_ALL.pdf')
+```
+
+# Associative Accuracy \~ ERS
+
+## Category Level
+
+```{r}
+cat_all$preJudgment[cat_all$preJudgment == 0] <- -1
+cat_all$source_acc[cat_all$source_acc == -1] <- 0
+mPar_acc <- glmer(source_acc ~ z_ers_mPar + RespBias + preJudgment + (z_ers_mPar + RespBias + preJudgment || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment)), family= 'binomial', control = glmerControl(optCtrl=list(maxeval=2e5)))
+summary(mPar_acc)
+```
+
+```{r}
+confint(mPar_acc, method="Wald")
+```
+
+```{r}
+MTL_acc <- glmer(source_acc ~ z_ers_MTLcortex + RespBias + preJudgment + (z_ers_MTLcortex + RespBias + preJudgment || sub_num), data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment)), family= 'binomial', control = glmerControl(optCtrl=list(maxeval=2e5)))
+summary(MTL_acc)
+```
+
+```{r}
+confint(MTL_acc, method="Wald")
+```
+
+```{r}
+fusi_acc <- glmer(source_acc ~ z_ers_fusiform + RespBias + preJudgment + (z_ers_fusiform + RespBias + preJudgment || sub_num),
+               data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment)), family= 'binomial', control = glmerControl(optCtrl=list(maxeval=2e5)))
+summary(fusi_acc)
+```
+
+```{r}
+confint(fusi_acc, method="Wald")
+```
+
+```{r}
+hipp_acc <- glmer(source_acc ~ z_ers_Hipp + RespBias + preJudgment + (z_ers_Hipp + RespBias + preJudgment || sub_num), 
+               data = cat_all, subset = (is.finite(source_acc) & is.finite(preJudgment)), family= 'binomial', control = glmerControl(optCtrl=list(maxeval=2e5)))
+summary(hipp_acc)
+```
+
+```{r}
+confint(hipp_acc, method="Wald")
+```
+
+```{r}
+export_summs(hipp_acc, MTL_acc, fusi_acc, mPar_acc, number_format = "%.2g", 
+             model.names = c('Hipp & Accuracy', 'MTLCortex & Accuracy',
+                             'Fusiform & Accuracy', 'mPar & Accuracy'), 
+             to.file = "docx", file.name = "./tables/catERS_accuracy.docx")
+```

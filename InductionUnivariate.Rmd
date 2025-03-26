@@ -1,0 +1,446 @@
+---
+title: "ExtendedERS"
+author: "Matt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Current Judgment (Activity on object affected by judgment on object)
+
+```{r}
+library(mediation); library(reshape2); library(ggplot2); library(Rmisc); library(Hmisc); library(lsr); library(DescTools); library(tidyverse); library(lme4); library(lmerTest); library(jtools); library(officer); library(flextable); library(openxlsx)
+
+all_data <- read.csv('./csv/all_data_ers.csv', stringsAsFactors = F)
+cat_data <- read.csv('./csv/all_data_caters.csv', stringsAsFactors = F)
+item_data <- read.csv('./csv/all_data_itemers.csv', stringsAsFactors = F)
+all_data$preJudgment[all_data$preJudgment==0] <- -1
+all_data$judgment[all_data$judgment==0] <- -1
+cat_data$preJudgment[cat_data$preJudgment==0] <- -1
+cat_data$judgment[cat_data$judgment==0] <- -1
+item_data$preJudgment[item_data$preJudgment==0] <- -1
+item_data$judgment[item_data$judgment==0] <- -1
+```
+
+```{r}
+exbroadERS <- read.csv('./csv/extendedROIs_ers_trial.csv')
+exbroadERS$ers <- exbroadERS$r_ers - exbroadERS$r_ers_diff
+exbroadERS$z_ers <- FisherZ(exbroadERS$ers)
+exbroadERS_wide <-
+  exbroadERS %>% 
+  pivot_wider(names_from=mask, values_from = c('z_ers','r_ers','r_ers_diff','ers'))
+exbroadERS_final <- exbroadERS_wide[,1:9]
+exbroadERS_final$sub_num <- exbroadERS_final$sub
+```
+
+```{r}
+all_data <- merge(all_data, exbroadERS_final, by = c('sub_num', 'ret_index'))
+cat_data <- merge(cat_data, all_data, by = c('sub_num', 'ret_index'))
+item_data <- merge(item_data, all_data, by = c('sub_num', 'ret_index'))
+```
+
+# Plotting
+
+## Plotting non-scaled data
+
+```{r}
+plot_data <- subset(all_data, is.finite(preJudgment), select = c('sub_num', 'preJudgment', 'ach_uni', 'prc_uni', 'ach4_uni', 'dop_uni', 'ahipp_uni', 'nor_uni'))
+plot_data$preJudgmentChar <- ''
+plot_data$preJudgmentChar[plot_data$preJudgment == 1] <- 'Familiar'
+plot_data$preJudgmentChar[plot_data$preJudgment == -1] <- 'Novel'
+```
+
+```{r}
+plot_data <-
+  plot_data %>% 
+  pivot_longer(c('ach_uni', 'prc_uni', 'ach4_uni', 'dop_uni', 'ahipp_uni', 
+                 'nor_uni'), names_to = 'ROI') %>% 
+  group_by(sub_num, ROI, preJudgmentChar) %>% 
+  summarise(uni_mean = mean(value)) %>% 
+  ungroup
+```
+
+```{r}
+plot_data <- summarySEwithin(plot_data, measurevar = 'uni_mean', withinvars = c('ROI', 'preJudgmentChar'), idvar = 'sub_num', conf.interval = 0.95)
+```
+
+```{r}
+ord <- c('dop_uni', 'ach4_uni', 'ach_uni', 'nor_uni', 'prc_uni', 'ahipp_uni')
+plot_data$ROI <- factor(plot_data$ROI, levels = ord)
+
+ggplot(plot_data, aes(x = ROI, y = uni_mean, colour = preJudgmentChar)) + 
+  ylab('Univariate Activity') + 
+  xlab('ROI') + 
+  ggtitle('Univariate Activity by Current Trial Judgment') + 
+  # ylim(-0.6, 0.6) + 
+  # geom_hline(yintercept = summary(aa_resid_model)$coefficients[,1]) + 
+  geom_pointrange(aes(x = ROI, ymin=uni_mean-se, ymax=uni_mean+se), lwd=1, fatten=2.5,position=position_dodge(.4)) + 
+  theme_classic() + 
+  scale_color_manual(values=c("#084081", "#2b8cbe"), name = "Preceding\nJudgment") +
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=10)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```
+
+# Univariate by Current Trial Judgment
+
+```{r}
+# lmer models ------
+ch123 <- lmer(ach_uni.z ~ preJudgment + (preJudgment || sub_num), data = all_data, 
+              subset=(is.finite(preJudgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(ch123)
+```
+
+```{r}
+confint(ch123, method="Wald")
+```
+
+```{r}
+snvta <- lmer(dop_uni.z ~ preJudgment +  (preJudgment || sub_num), data = all_data, 
+              subset=(is.finite(preJudgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(snvta)
+```
+
+```{r}
+confint(snvta, method="Wald")
+```
+
+```{r}
+lc <- lmer(nor_uni.z ~ preJudgment + (preJudgment || sub_num), data = all_data, 
+              subset=(is.finite(preJudgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(lc)
+```
+
+```{r}
+confint(lc, method="Wald")
+```
+
+```{r}
+ahipp <- lmer(ahipp_uni.z ~ preJudgment + (preJudgment || sub_num), data = all_data, 
+              subset=(is.finite(preJudgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(ahipp)
+```
+
+```{r}
+prc <- lmer(prc_uni.z ~ preJudgment + (preJudgment || sub_num), data = all_data, 
+              subset=(is.finite(preJudgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(prc)
+```
+
+```{r}
+confint(prc, method="Wald")
+```
+
+```{r}
+ch4 <- lmer(ach4_uni.z ~ preJudgment + (preJudgment || sub_num), data = all_data, 
+              subset=(is.finite(preJudgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(ch4)
+```
+
+```{r}
+confint(ch4, method="Wald")
+```
+
+```{r}
+export_summs(snvta, ch4, ch123, lc, prc, ahipp, number_format = "%.2g", model.names = c('SN/VTA', 'CH4', 'CH123', 
+                                                                'LC', 'PRC', 'aHipp'), 
+             to.file = 'docx', file.name= './tables/inductionNovFam.docx')
+```
+
+# ERS \~ ACh Univariate
+
+```{r}
+mParbroad <- lmer(mPar.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(mParbroad)
+```
+
+```{r}
+confint(mParbroad, method="Wald")
+```
+
+```{r}
+mParitem <- lmer(z_ers_mPar ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(mParitem)
+```
+
+```{r}
+confint(mParitem, method="Wald")
+```
+
+```{r}
+MTLbroad <- lmer(MTLcortex.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(MTLbroad)
+```
+
+```{r}
+confint(MTLbroad, method="Wald")
+```
+
+```{r}
+MTLitem <- lmer(z_ers_MTLcortex ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(MTLitem)
+```
+
+```{r}
+confint(MTLitem, method="Wald")
+```
+
+```{r}
+fusibroad <- lmer(fusiform.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(fusibroad)
+```
+
+```{r}
+confint(fusibroad, method="Wald")
+```
+
+```{r}
+fusiitem <- lmer(z_ers_fusiform ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(fusiitem)
+```
+
+```{r}
+confint(fusiitem, method="Wald")
+```
+
+```{r}
+hippbroad <- lmer(Hipp.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(hippbroad)
+```
+
+```{r}
+confint(hippbroad, method="Wald")
+```
+
+```{r}
+hippitem <- lmer(z_ers_Hipp ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(hippitem)
+```
+
+```{r}
+confint(hippitem, method="Wald")
+```
+
+```{r}
+fdr_corr_dop_broad <- list()
+fdr_corr_prc_broad <- list()
+fdr_corr_int_broad <- list()
+lPFCbroad <- lmer(z_ers_lPFC_posthoc ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_corr_prc_broad <- append(fdr_corr_prc_broad, coef(summary(lPFCbroad))[,"Pr(>|t|)"][3])
+fdr_corr_dop_broad <- append(fdr_corr_dop_broad, coef(summary(lPFCbroad))[,"Pr(>|t|)"][5])
+fdr_corr_int_broad <- append(fdr_corr_int_broad, coef(summary(lPFCbroad))[,"Pr(>|t|)"][1])
+summary(lPFCbroad)
+```
+
+```{r}
+confint(lPFCbroad, method="Wald")
+```
+
+```{r}
+fdr_corr_dop_item <- list()
+fdr_corr_prc_item <- list()
+fdr_corr_int_item <- list()
+lPFCitem <- lmer(z_ers_lPFC_posthoc.x ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_corr_dop_item <- append(fdr_corr_dop_item, coef(summary(lPFCitem))[,"Pr(>|t|)"][5])
+fdr_corr_prc_item <- append(fdr_corr_prc_item, coef(summary(lPFCitem))[,"Pr(>|t|)"][3])
+fdr_corr_int_item <- append(fdr_corr_int_item, coef(summary(lPFCitem))[,"Pr(>|t|)"][1])
+summary(lPFCitem)
+```
+
+```{r}
+confint(lPFCitem, method="Wald")
+```
+
+```{r}
+LPCbroad <- lmer(z_ers_LPC_posthoc ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(LPCbroad)
+fdr_corr_prc_broad <- append(fdr_corr_prc_broad, coef(summary(LPCbroad))[,"Pr(>|t|)"][3])
+fdr_corr_dop_broad <- append(fdr_corr_dop_broad, coef(summary(LPCbroad))[,"Pr(>|t|)"][5])
+fdr_corr_int_broad <- append(fdr_corr_int_broad, coef(summary(LPCbroad))[,"Pr(>|t|)"][1])
+```
+
+```{r}
+confint(LPCbroad, method="Wald")
+```
+
+```{r}
+LPCitem <- lmer(z_ers_LPC_posthoc.x ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_corr_dop_item <- append(fdr_corr_dop_item, coef(summary(LPCitem))[,"Pr(>|t|)"][5])
+fdr_corr_prc_item <- append(fdr_corr_prc_item, coef(summary(LPCitem))[,"Pr(>|t|)"][3])
+fdr_corr_int_item <- append(fdr_corr_int_item, coef(summary(LPCitem))[,"Pr(>|t|)"][1])
+summary(LPCitem)
+```
+
+```{r}
+confint(LPCitem, method="Wald")
+```
+
+```{r}
+vmPFCbroad <- lmer(z_ers_vmPFC_posthoc ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+summary(vmPFCbroad)
+fdr_corr_prc_broad <- append(fdr_corr_prc_broad, coef(summary(vmPFCbroad))[,"Pr(>|t|)"][3])
+fdr_corr_dop_broad <- append(fdr_corr_dop_broad, coef(summary(vmPFCbroad))[,"Pr(>|t|)"][5])
+fdr_corr_int_broad <- append(fdr_corr_int_broad, coef(summary(vmPFCbroad))[,"Pr(>|t|)"][1])
+```
+
+```{r}
+confint(vmPFCbroad, method="Wald")
+```
+
+```{r}
+vmPFCitem <- lmer(z_ers_vmPFC_posthoc.x ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_corr_dop_item <- append(fdr_corr_dop_item, coef(summary(vmPFCitem))[,"Pr(>|t|)"][5])
+fdr_corr_prc_item <- append(fdr_corr_prc_item, coef(summary(vmPFCitem))[,"Pr(>|t|)"][3])
+fdr_corr_int_item <- append(fdr_corr_int_item, coef(summary(vmPFCitem))[,"Pr(>|t|)"][1])
+summary(vmPFCitem)
+```
+
+```{r}
+confint(vmPFCitem, method="Wald")
+```
+
+```{r}
+print(fdr_corr_int_broad)
+print(p.adjust(fdr_corr_int_broad, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_int_item)
+print(p.adjust(fdr_corr_int_item, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_dop_broad)
+print(p.adjust(fdr_corr_dop_broad, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_dop_item)
+print(p.adjust(fdr_corr_dop_item, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_prc_broad)
+print(p.adjust(fdr_corr_prc_broad, method = 'fdr'))
+```
+
+```{r}
+print(fdr_corr_prc_item)
+print(p.adjust(fdr_corr_prc_item, method = 'fdr'))
+```
+
+```{r}
+export_summs(hippitem, MTLitem, fusiitem, mParitem, hippbroad, MTLbroad, fusibroad, mParbroad, number_format = "%.2g",
+             model.names = c('Hipp Trial', 'MTLcortex Trial', 'Fusiform Trial', 
+                             'mPar Trial', 'Hipp Broad', 'MTLcortex Broad', 
+                             'Fusiform Broad', 'mPar Broad'), to.file = 'docx', 
+             file.name = './tables/ERSInduction_ap.docx')
+```
+
+```{r}
+export_summs(LPCitem, lPFCitem, number_format = "%.2g", vmPFCitem, LPCbroad, lPFCbroad, vmPFCbroad, 
+             model.names = c('LPC Trial', 'd&lPFC Trial', 'vmPFC Trial', 
+                             'LPC Broad', 'd&lPFC Broad', 'vmPFC Broad'), to.file = 'docx', 
+             file.name = './tables/ERSInduction_ph.docx')
+```
+
+# Mediation Analysis
+
+```{r}
+detach("package:lmerTest")
+```
+
+```{r}
+item_data <- ddply(item_data, c("sub_num"), transform, z_MTL = scale(MTLcortex.z))
+item_data <- ddply(item_data, c("sub_num"), transform, z_Hipp = scale(Hipp.z))
+all_data <- ddply(all_data, c("sub_num"), transform, z_MTL = scale(MTLcortex.z))
+all_data <- ddply(all_data, c("sub_num"), transform, z_Hipp = scale(Hipp.z))
+```
+
+```{r}
+model.ahippmediator <- lmer(ahipp_uni.z ~ preJudgment + (preJudgment | sub_num), data = all_data, subset=(is.finite(preJudgment) & rec_acc==1),
+                            control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(model.ahippmediator)
+```
+
+```{r}
+model.dopmediator <- lmer(dop_uni.z ~ preJudgment + (preJudgment | sub_num), data = all_data, subset=(is.finite(preJudgment) & rec_acc==1),
+                          control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(model.dopmediator)
+```
+
+```{r}
+model.dv <- lmer(z_MTL ~ preJudgment + ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (preJudgment + ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias | sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1),
+                       control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(model.dv)
+```
+
+```{r}
+results.ahipp = mediation::mediate(model.ahippmediator, model.dv, treat='preJudgment', mediator='ahipp_uni.z')
+summary(results.ahipp)
+```
+
+```{r}
+results.dop = mediation::mediate(model.dopmediator, model.dv, treat='preJudgment', mediator='dop_uni.z')
+summary(results.dop)
+```
+
+## Item Level Mediation Analysis
+
+```{r}
+model.dopmediator <- lmer(dop_uni.z ~ preJudgment.x + (preJudgment.x | sub_num), data = item_data, subset=(is.finite(preJudgment.x) & rec_acc.x==1),
+                          control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(model.dopmediator)
+```
+
+```{r}
+model.ahippmediator <- lmer(ahipp_uni.z ~ preJudgment.x + (preJudgment.x | sub_num), data = item_data, subset=(is.finite(preJudgment.x) & rec_acc.x==1),
+                            control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(model.ahippmediator)
+```
+
+```{r}
+modelMTL.dv <- lmer(z_MTL ~ preJudgment.x + ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (preJudgment.x + ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x | sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(preJudgment.x) & rec_acc.x==1),
+                       control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(modelMTL.dv)
+```
+
+```{r}
+modelHipp.dv <- lmer(z_Hipp ~ preJudgment.x + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (preJudgment.x + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x | sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(preJudgment.x) & rec_acc.x==1),
+                       control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(modelHipp.dv)
+```
+
+```{r}
+results.dopitem = mediation::mediate(model.dopmediator, modelMTL.dv, treat='preJudgment.x', mediator='dop_uni.z')
+summary(results.dopitem)
+```
+
+```{r}
+results.ahippitem = mediation::mediate(model.ahippmediator, modelMTL.dv, treat='preJudgment.x', mediator='ahipp_uni.z')
+summary(results.ahippitem)
+```
+
+```{r}
+results.hippdop = mediation::mediate(model.dopmediator, modelHipp.dv, treat='preJudgment.x', mediator='dop_uni.z')
+summary(results.hippdop)
+```

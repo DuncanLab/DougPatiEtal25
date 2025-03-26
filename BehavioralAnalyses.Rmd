@@ -1,0 +1,261 @@
+---
+title: "RetNoMRI Behavioral Analyses: Word Accuracy"
+author: "Matthew Dougherty"
+date: "`r Sys.Date()`"
+output: html_document: code_folding: show
+---
+
+# Data Read-In
+
+```{r, LibrariesandData}
+#Need to find data with correct answer == 1 for the false alarm analysis
+library(lmerTest); library(lme4); library(broom); library(Rmisc); library(emmeans); library(tidyverse); library(effectsize); library(jtools); library(officer); library(flextable); library(openxlsx)
+data <- read.csv('./csv/retevs_behavioral.csv')
+```
+
+```{r, MutationsandSubsetting}
+data$trial_num_scaled <- scale(data$trial_num)[, 1]
+data$block_num_center <- data$block_num - mean(data$block_num)
+data <-mutate(data, pre_assoc_correct = lag(source_accNoNA), 
+              pre_RT = lag(ret_RT), pre_corrAns = lag(obj_corrAns), 
+              pre_ret_resp = lag(ret_resp), pre_trial_num_scaled = lag(trial_num_scaled), 
+              pre_block_num_center = lag(block_num_center),
+              pre_RespBias = lag(RespBias))
+data$preJudgment[data$preJudgment ==0] <- -1
+data$pre_assoc_correct[data$pre_assoc_correct ==0] <- -1
+data$corr_ans_bin <- data$word_corrAns
+data$corr_ans_bin[data$corr_ans_bin == 3] <- -1
+data$corr_ans_bin[data$corr_ans_bin == 4] <- 1
+data$pre_RespBias[data$pre_RespBias == 0] <- -1
+data$preObjective <- 1
+data$preObjective[data$pre_corrAns == 1] <- -1 
+data$FA <- -1
+data$FA[data$word_corrAns == 1 & data$ret_resp != 1] <- 1
+data$item_mem <- data$rec_acc
+data$item_mem[data$source_acc == 1] <- NA
+probedata <- subset(data, ret_type == 'word' & word_corrAns != 1)
+```
+
+# Associative Accuracy
+
+```{r, AssociativeAccPreJudgment}
+#Associative accuracy as a function of preceding judgment, adding Response Bias as a covariate
+aa <- glmer(source_acc ~ preJudgment + RespBias + (preJudgment + RespBias || sub_num), 
+              data = probedata, subset=(is.finite(source_acc) & is.finite(preJudgment) & rec_acc==1 & ret_resp %in% c(2,3,4)), family = 'binomial', control = glmerControl(optimizer = 'bobyqa', optCtrl=list(maxeval=2e5)))
+summary(aa)
+```
+
+```{r}
+confint(aa, method="Wald")
+```
+
+## EMMEANS Graphing
+
+```{r}
+beh_mmeans <- emmeans(aa, specs = c("preJudgment", "RespBias"), at = list(preJudgment = c(-1, 1), RespBias = 0), type = 'response' )
+beh_mmeans_tidy <- tidy(beh_mmeans, conf.int = T)
+beh_mmeans_tidy$preJudgmentChar <- ''
+beh_mmeans_tidy$preJudgmentChar[beh_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+beh_mmeans_tidy$preJudgmentChar[beh_mmeans_tidy$preJudgment == -1] <- 'Novel'
+```
+
+```{r}
+ggplot(beh_mmeans_tidy, aes(x = preJudgmentChar, y = prob, colour = preJudgmentChar)) + 
+  ylab('Associative Accuracy') + 
+  xlab('Preceding Judgment') + 
+  ggtitle('Associative Accuracy by Preceding Judgment') + 
+  ylim(0.5, 1.0) + 
+  geom_point(size = 3) + 
+  geom_errorbar(aes(ymin=prob-std.error, ymax=prob+std.error), width = 0, linewidth = 1.25) + 
+  theme_classic() + 
+  scale_color_manual(values=c("#084081", "#2b8cbe"), name = "Preceding\nJudgment") +
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```
+
+# Associative Accuracy Control Models
+
+## Scaling RT across probe trials
+
+```{r}
+pprt_data <- subset(probedata, is.finite(pre_RT))
+pprt_data <- ddply(pprt_data, c("sub_num"), transform, scaled_pRT = scale(pre_RT))
+pprt_data_subset <-  subset(pprt_data, ret_type == 'word' & word_corrAns != 1)
+```
+
+```{r}
+aa_ctrl <- glmer(source_acc ~ preJudgment + RespBias + corr_ans_bin + scaled_pRT + (preJudgment + RespBias + word_corrAns + scaled_pRT || sub_num), data = pprt_data_subset, subset=(is.finite(source_acc) & rec_acc==1 & ret_resp %in% c(2,3,4)), family = 'binomial', control = glmerControl(optimizer = 'bobyqa', optCtrl=list(maxeval=2e5)))
+summary(aa_ctrl)
+```
+
+```{r}
+confint(aa_ctrl, method="Wald")
+```
+
+# Response Time
+
+```{r, RespTimePreJudgment}
+#Reaction time on current trial as a function of preceding judgment, adding Response Bias, correct answer, trial number, and block number as covariates 
+rt <- glmer(ret_RT ~ preJudgment + RespBias + corr_ans_bin + block_num_center + trial_num_scaled + (preJudgment + RespBias + corr_ans_bin + block_num_center + trial_num_scaled || sub_num), data = probedata, subset=(source_acc==1 & is.finite(preJudgment)), family = inverse.gaussian(link = "log"), control = glmerControl(optimizer = 'bobyqa', optCtrl=list(maxeval=2e5)))
+summary(rt)
+```
+
+```{r}
+confint(rt, method="Wald")
+```
+
+## EMMEANS Graphing
+
+```{r}
+rt_mmeans <- emmeans(rt, specs = c("preJudgment", "RespBias"), at = list(preJudgment = c(-1, 1), RespBias = 0), type = 'response')
+rt_mmeans_tidy <- tidy(rt_mmeans, conf.int = T)
+rt_mmeans_tidy$preJudgmentChar <- ''
+rt_mmeans_tidy$preJudgmentChar[beh_mmeans_tidy$preJudgment == 1] <- 'Familiar'
+rt_mmeans_tidy$preJudgmentChar[beh_mmeans_tidy$preJudgment == -1] <- 'Novel'
+```
+
+```{r}
+ggplot(rt_mmeans_tidy, aes(x = preJudgmentChar, y = response, colour = preJudgmentChar)) + 
+  ylab('Response Time') + 
+  xlab('Preceding Judgment') + 
+  ggtitle('Response Time by Preceding Judgment') + 
+  ylim(1.0, 1.5) + 
+  geom_point(size = 3) + 
+  geom_errorbar(aes(ymin=response-std.error, ymax=response+std.error), width = 0, linewidth = 1.25) + 
+  theme_classic() + 
+  scale_color_manual(values=c("#084081", "#2b8cbe"), name = "Preceding\nJudgment") +
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```
+
+# Table Creation
+
+```{r}
+export_summs(aa, aa_ctrl, rt, number_format = "%.2g", 
+             model.names = c('Associative Accuracy', 'Associative Accuracy Control', 'Response Time'), to.file = 'docx', file.name = './tables/behavioraltable.docx')
+```
+
+# Item Memory
+
+```{r}
+data <- read.csv('./csv/retevs_behavioral.csv')
+```
+
+```{r}
+data <-mutate(data, pre_assoc_correct = lag(source_accNoNA))
+```
+
+```{r}
+probedata <- subset(data, ret_type == 'word' & RespBias == 0)
+probe_preold <- subset(probedata, preJudgment == 1)
+probe_prenew <- subset(probedata, preJudgment == 0)
+```
+
+```{r}
+item_preold <- subset(probe_preold, source_accNoNA != 1 & is.finite(ret_resp)) #all word trials not with associative retrieval correct
+item_preold_hr <- subset(item_preold, old_num == 1) #all word trials where the stimulus was old
+item_preold_fa <- subset(item_preold, old_num == 0)
+```
+
+```{r}
+item_preold_hr <-
+  item_preold_hr %>% 
+  group_by(sub_num) %>% 
+  summarise(hit_rate = mean(judgment)) %>% #probability of "old" response when stimulus "old"
+  ungroup()
+```
+
+```{r}
+item_preold_fa <-
+  item_preold_fa %>% 
+  group_by(sub_num) %>% 
+  summarise(false_alarm = mean(judgment)) %>% 
+  ungroup()
+```
+
+```{r}
+item_preold_hr$hit_rate[item_preold_hr$hit_rate == 1.0] <- 48/49
+item_preold_fa$false_alarm[item_preold_fa$false_alarm == 0.0] <- 1/25
+item_preold_d <- merge(item_preold_hr, item_preold_fa, by = 'sub_num')
+item_preold_d$Old <- qnorm(item_preold_d$hit_rate) - qnorm(item_preold_d$false_alarm)
+item_preold_d <- subset(item_preold_d, is.finite(Old))
+mean(item_preold_d$Old)
+```
+
+```{r}
+item_prenew <- subset(probe_prenew, source_accNoNA != 1 & is.finite(ret_resp)) #all word trials not with associative retrieval correct
+item_prenew_hr <- subset(item_prenew, old_num == 1) #all word trials where the stimulus was old
+item_prenew_fa <- subset(item_prenew, old_num == 0)
+```
+
+```{r}
+item_prenew_hr <-
+  item_prenew_hr %>% 
+  group_by(sub_num) %>% 
+  summarise(hit_rate = mean(judgment)) %>% #probability of "old" response when stimulus "old"
+  ungroup()
+```
+
+```{r}
+item_prenew_fa <-
+  item_prenew_fa %>% 
+  group_by(sub_num) %>% 
+  summarise(false_alarm = mean(judgment)) %>% 
+  ungroup()
+```
+
+```{r}
+item_prenew_hr$hit_rate[item_prenew_hr$hit_rate == 1.0] <- 48/49
+item_prenew_fa$false_alarm[item_prenew_fa$false_alarm == 0.0] <- 1/25
+item_prenew_d <- merge(item_prenew_hr, item_prenew_fa, by = 'sub_num') 
+item_prenew_d$New <- qnorm(item_prenew_d$hit_rate) - qnorm(item_prenew_d$false_alarm)
+item_prenew_d <- subset(item_prenew_d, is.finite(New))
+mean(item_prenew_d$New)
+```
+
+```{r}
+item_prenew_d$preJudgmentChar <- 'Novel'
+item_prenew_d$estimate <- item_prenew_d$New
+item_preold_d$preJudgmentChar <- 'Familiar'
+item_preold_d$estimate <- item_preold_d$Old
+item_prenew_d <- subset(item_prenew_d, select = c('sub_num', 'preJudgmentChar', 'estimate'))
+item_preold_d <- subset(item_preold_d, select = c('sub_num', 'preJudgmentChar', 'estimate'))
+item_mem <- rbind(item_prenew_d, item_preold_d)
+item_mem <- subset(item_mem, sub_num != 35 & sub_num != 7)
+```
+
+```{r}
+item_mem_graph <- summarySEwithin(item_mem, measurevar = 'estimate', withinvars = 'preJudgmentChar', idvar = 'sub_num', conf.interval = 0.95)
+```
+
+```{r}
+t.test(subset(item_mem, preJudgmentChar == 'Familiar')$estimate, subset(item_mem, preJudgmentChar == 'Novel')$estimate, paired = T)
+```
+
+```{r}
+effectsize::cohens_d(subset(item_mem, preJudgmentChar == 'Familiar')$estimate,
+                     subset(item_mem, preJudgmentChar == 'Novel')$estimate, paired = T)
+```
+
+```{r}
+ggplot(item_mem_graph, aes(x = preJudgmentChar, y = estimate, colour = preJudgmentChar)) + 
+  ylab("d'") + 
+  xlab('Preceding Judgment') + 
+  ggtitle('Item Memory by Preceding Judgment') + 
+  ylim(0.5, 2.0) + 
+  geom_point(size = 3) + 
+  geom_errorbar(aes(ymin=estimate-se, ymax=estimate+se), width = 0, linewidth = 1.25) + 
+  theme_classic() + 
+  scale_color_manual(values=c("#084081", "#2b8cbe"), name = "Preceding\nJudgment") +
+  guides(fill=none) + 
+  theme(axis.title.x = element_text(vjust=-1,face="bold",size=16), axis.text.x=element_text(vjust=0.5, size=14)) +
+  theme(axis.title.y = element_text(face="bold",size=16), axis.text.y=element_text(vjust=0.5, size=14)) +
+  theme(plot.title = element_text(hjust=0.5,lineheight=0.8,face="bold",size=18)) +
+  theme(plot.margin = unit(c(.5,1,.5,.5), "cm"))
+```

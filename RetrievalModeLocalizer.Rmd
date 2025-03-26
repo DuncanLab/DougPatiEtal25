@@ -1,0 +1,60 @@
+---
+title: "IncidentalEncoding"
+author: "Matt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse); library(lmerTest); library(lme4); library(jtools); library(officer); library(flextable); library(openxlsx)
+all_ret <- read.csv('./csv/retevs_behavioral.csv')
+```
+
+```{r}
+probe_newstim <-
+  all_ret %>% 
+  subset(word_corrAns == 1, select = c('sub_num', 'word', 'word_corrAns', 'rec_acc', 'preJudgment'))
+
+colnames(probe_newstim) <- c('sub_num', 'word', 'ret_word_corrAns', 'ret_rec_acc', 'ret_preJudgment')
+```
+
+```{r}
+RMevents <- read.csv('./csv/RM_events.csv')
+RMevents <- mutate(RMevents, rm_preJudgment = lag(resp))
+RMevents$RespBias <- 0
+RMevents$RespBias[RMevents$old_num == RMevents$rm_preJudgment] <- 1
+RMevents <- subset(RMevents, task_num == 2, select = c('sub_num', 'word', 'task_num', 'old_num', 'resp', 'resp_bin', 'RespBias', 'rm_preJudgment'))
+colnames(RMevents) <- c('sub_num', 'word', 'rm_task_num', 'rm_old_num', 'rm_resp', 'rm_resp_bin', 'rm_RespBias', 'rm_preJudgment')
+```
+
+```{r}
+RMevents <- subset(RMevents, sub_num %in% unique(probe_newstim$sub_num))
+```
+
+```{r}
+RM_all <- merge(probe_newstim, RMevents, by = c('sub_num', 'word'), all.y = T)
+```
+
+```{r}
+#Effect coding responses during RM localizer: new is -1/0, old is 1
+RM_all$rm_resp_bin[RM_all$rm_resp == 2] <- 0
+RM_all$ret_preJudgment[RM_all$ret_preJudgment == 0] <- -1
+```
+
+```{r}
+RM_all$rm_acc <- 0
+RM_all$rm_acc[RM_all$rm_resp == 1 & RM_all$rm_old_num == 1] <- 1
+```
+
+```{r}
+model <- glmer(rm_acc ~ ret_preJudgment + rm_RespBias + (ret_preJudgment + rm_RespBias || sub_num), data = RM_all, subset=(is.finite(ret_preJudgment) & is.finite(rm_resp_bin) & rm_old_num == 1), family = 'binomial', control = glmerControl(optimizer = 'bobyqa', optCtrl=list(maxeval=2e5)))
+summary(model)
+```
+
+```{r}
+confint(model, method="Wald")
+```
+
+```{r}
+export_summs(model, model.names = 'Retrieval Mode Localizer Response Accuracy', to.file = 'docx', file.name = './tables/retmodelocalizer.docx')
+```

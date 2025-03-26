@@ -1,0 +1,371 @@
+---
+title: "ExtendedERS"
+author: "Matt"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Current Judgment (Activity on probe affected by judgment on probe)
+
+```{r}
+library(reshape2); library(ggplot2); library(Rmisc); library(Hmisc); library(lsr); library(DescTools); library(tidyverse); library(lme4); library(lmerTest)
+
+all_data <- read.csv('./csv/probe_data_broad_ers_wHipp.csv', stringsAsFactors = F)
+cat_data <- read.csv('./csv/all_data_caters.csv', stringsAsFactors = F)
+item_data <- read.csv('./csv/all_data_itemers.csv', stringsAsFactors = F)
+all_data$preJudgment[all_data$preJudgment==0] <- -1
+all_data$judgment[all_data$judgment==0] <- -1
+cat_data$preJudgment[cat_data$preJudgment==0] <- -1
+cat_data$judgment[cat_data$judgment==0] <- -1
+item_data$preJudgment[item_data$preJudgment==0] <- -1
+item_data$judgment[item_data$judgment==0] <- -1
+```
+
+```{r}
+exbroadERS <- read.csv('./csv/extendedROIs_ers_trial.csv')
+exbroadERS$ers <- exbroadERS$r_ers - exbroadERS$r_ers_diff
+exbroadERS$z_ers <- FisherZ(exbroadERS$ers)
+exbroadERS_wide <-
+  exbroadERS %>% 
+  pivot_wider(names_from=mask, values_from = c('z_ers','r_ers','r_ers_diff','ers'))
+exbroadERS_final <- exbroadERS_wide[,1:9]
+exbroadERS_final$sub_num <- exbroadERS_final$sub
+```
+
+```{r}
+all_data <- merge(all_data, exbroadERS_final, by = c('sub_num', 'ret_index'))
+cat_data <- merge(cat_data, all_data, by = c('sub_num', 'ret_index'))
+item_data <- merge(item_data, all_data, by = c('sub_num', 'ret_index'))
+```
+
+## Univariate by Judgment Models
+
+```{r}
+# lmer models ------
+ch123 <- lmer(ach_uni.z ~ judgment + (judgment || sub_num), data = all_data, 
+              subset=(is.finite(judgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(ch123)
+```
+
+```{r}
+confint(ch123, method="Wald")
+```
+
+```{r}
+snvta <- lmer(dop_uni.z ~ judgment +  (judgment || sub_num), data = all_data, 
+              subset=(is.finite(judgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(snvta)
+```
+
+```{r}
+confint(snvta, method="Wald")
+```
+
+```{r}
+lc <- lmer(nor_uni.z ~ judgment + (judgment || sub_num), data = all_data, 
+              subset=(is.finite(judgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(lc)
+```
+
+```{r}
+confint(lc, method="Wald")
+```
+
+```{r}
+ahipp <- lmer(ahipp_uni.z ~ judgment + (judgment || sub_num), data = all_data, 
+              subset=(is.finite(judgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(ahipp)
+```
+
+```{r}
+confint(ahipp, method="Wald")
+```
+
+```{r}
+prc <- lmer(prc_uni.z ~ judgment + (judgment || sub_num), data = all_data, 
+              subset=(is.finite(judgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(prc)
+```
+
+```{r}
+confint(prc, method="Wald")
+```
+
+```{r}
+ch4 <- lmer(ach4_uni.z ~ judgment + (judgment || sub_num), data = all_data, 
+              subset=(is.finite(judgment)), control = lmerControl(optCtrl=list(maxeval=2e5)))
+summary(ch4)
+```
+
+```{r}
+confint(ch4, method="Wald")
+```
+
+```{r}
+export_summs(snvta, ch4, ch123, lc, prc, ahipp, number_format = "%.2g", model.names = c('SN/VTA', 'CH4', 'CH123', 'LC', 'PRC', 'aHipp'), to.file = 'docx', file.name= './tables/probeNovFam.docx')
+```
+
+## ERS \~ Univariate
+
+```{r}
+fdr_broad_ahipp <- list()
+fdr_broad_dop <- list()
+fdr_broad_LC <- list()
+fdr_broad_int <- list()
+mParbroad <- lmer(mPar.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_broad_ahipp <- append(fdr_broad_ahipp, coef(summary(mParbroad))[,"Pr(>|t|)"][2])
+fdr_broad_dop <- append(fdr_broad_dop, coef(summary(mParbroad))[,"Pr(>|t|)"][5])
+fdr_broad_LC <- append(fdr_broad_LC, coef(summary(mParbroad))[,"Pr(>|t|)"][6])
+fdr_broad_int <- append(fdr_broad_int, coef(summary(mParbroad))[,"Pr(>|t|)"][1])
+summary(mParbroad)
+```
+
+```{r}
+confint(mParbroad, method="Wald")
+```
+
+```{r}
+fdr_item_ahipp <- list()
+fdr_item_dop <- list()
+fdr_item_LC <- list()
+fdr_item_int <- list()
+mParitem <- lmer(z_ers_mPar ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_item_ahipp <- append(fdr_item_ahipp, coef(summary(mParitem))[,"Pr(>|t|)"][2])
+fdr_item_dop <- append(fdr_item_dop, coef(summary(mParitem))[,"Pr(>|t|)"][5])
+fdr_item_LC <- append(fdr_item_LC, coef(summary(mParitem))[,"Pr(>|t|)"][6])
+fdr_item_int <- append(fdr_item_int, coef(summary(mParitem))[,"Pr(>|t|)"][1])
+
+summary(mParitem)
+```
+
+```{r}
+confint(mParitem, method="Wald")
+```
+
+```{r}
+MTLbroad <- lmer(MTLcortex.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + hipp_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_broad_ahipp <- append(fdr_broad_ahipp, coef(summary(MTLbroad))[,"Pr(>|t|)"][2])
+fdr_broad_dop <- append(fdr_broad_dop, coef(summary(MTLbroad))[,"Pr(>|t|)"][5])
+fdr_broad_LC <- append(fdr_broad_LC, coef(summary(MTLbroad))[,"Pr(>|t|)"][6])
+fdr_broad_int <- append(fdr_broad_int, coef(summary(MTLbroad))[,"Pr(>|t|)"][1])
+summary(MTLbroad)
+```
+
+```{r}
+confint(MTLbroad, method="Wald")
+```
+
+```{r}
+MTLitem <- lmer(z_ers_MTLcortex ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_item_ahipp <- append(fdr_item_ahipp, coef(summary(MTLitem))[,"Pr(>|t|)"][2])
+fdr_item_dop <- append(fdr_item_dop, coef(summary(MTLitem))[,"Pr(>|t|)"][5])
+fdr_item_LC <- append(fdr_item_LC, coef(summary(MTLitem))[,"Pr(>|t|)"][6])
+fdr_item_int <- append(fdr_item_int, coef(summary(MTLitem))[,"Pr(>|t|)"][1])
+summary(MTLitem)
+```
+
+```{r}
+confint(MTLitem, method="Wald")
+```
+
+```{r}
+fusibroad <- lmer(fusiform.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_broad_ahipp <- append(fdr_broad_ahipp, coef(summary(fusibroad))[,"Pr(>|t|)"][2])
+fdr_broad_dop <- append(fdr_broad_dop, coef(summary(fusibroad))[,"Pr(>|t|)"][5])
+fdr_broad_LC <- append(fdr_broad_LC, coef(summary(fusibroad))[,"Pr(>|t|)"][6])
+fdr_broad_int <- append(fdr_broad_int, coef(summary(fusibroad))[,"Pr(>|t|)"][1])
+summary(fusibroad)
+```
+
+```{r}
+confint(fusibroad, method="Wald")
+```
+
+```{r}
+fusiitem <- lmer(z_ers_fusiform ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_item_ahipp <- append(fdr_item_ahipp, coef(summary(fusiitem))[,"Pr(>|t|)"][2])
+fdr_item_dop <- append(fdr_item_dop, coef(summary(fusiitem))[,"Pr(>|t|)"][5])
+fdr_item_LC <- append(fdr_item_LC, coef(summary(fusiitem))[,"Pr(>|t|)"][6])
+fdr_item_int <- append(fdr_item_int, coef(summary(fusiitem))[,"Pr(>|t|)"][1])
+summary(fusiitem)
+```
+
+```{r}
+confint(fusiitem, method="Wald")
+```
+
+```{r}
+hippbroad <- lmer(Hipp.z ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_broad_ahipp <- append(fdr_broad_ahipp, coef(summary(hippbroad))[,"Pr(>|t|)"][2])
+fdr_broad_dop <- append(fdr_broad_dop, coef(summary(hippbroad))[,"Pr(>|t|)"][5])
+fdr_broad_LC <- append(fdr_broad_LC, coef(summary(hippbroad))[,"Pr(>|t|)"][6])
+fdr_broad_int <- append(fdr_broad_int, coef(summary(hippbroad))[,"Pr(>|t|)"][1])
+summary(hippbroad)
+```
+
+```{r}
+confint(hippbroad, method="Wald")
+```
+
+```{r}
+hippitem <- lmer(z_ers_Hipp ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_item_ahipp <- append(fdr_item_ahipp, coef(summary(hippitem))[,"Pr(>|t|)"][2])
+fdr_item_dop <- append(fdr_item_dop, coef(summary(hippitem))[,"Pr(>|t|)"][5])
+fdr_item_LC <- append(fdr_item_LC, coef(summary(hippitem))[,"Pr(>|t|)"][6])
+fdr_item_int <- append(fdr_item_int, coef(summary(hippitem))[,"Pr(>|t|)"][1])
+summary(hippitem)
+```
+
+```{r}
+confint(hippitem, method="Wald")
+```
+
+```{r}
+lPFCbroad <- lmer(z_ers_lPFC_posthoc ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_broad_ahipp <- append(fdr_broad_ahipp, coef(summary(lPFCbroad))[,"Pr(>|t|)"][2])
+fdr_broad_dop <- append(fdr_broad_dop, coef(summary(lPFCbroad))[,"Pr(>|t|)"][5])
+fdr_broad_LC <- append(fdr_broad_LC, coef(summary(lPFCbroad))[,"Pr(>|t|)"][6])
+fdr_broad_int <- append(fdr_broad_int, coef(summary(lPFCbroad))[,"Pr(>|t|)"][1])
+summary(lPFCbroad)
+```
+
+```{r}
+confint(lPFCbroad, method="Wald")
+```
+
+```{r}
+lPFCitem <- lmer(z_ers_lPFC_posthoc.x ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_item_ahipp <- append(fdr_item_ahipp, coef(summary(lPFCitem))[,"Pr(>|t|)"][2])
+fdr_item_dop <- append(fdr_item_dop, coef(summary(lPFCitem))[,"Pr(>|t|)"][5])
+fdr_item_LC <- append(fdr_item_LC, coef(summary(lPFCitem))[,"Pr(>|t|)"][6])
+fdr_item_int <- append(fdr_item_int, coef(summary(lPFCitem))[,"Pr(>|t|)"][1])
+summary(lPFCitem)
+```
+
+```{r}
+confint(lPFCitem, method="Wald")
+```
+
+```{r}
+LPCbroad <- lmer(z_ers_LPC_posthoc ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_broad_ahipp <- append(fdr_broad_ahipp, coef(summary(LPCbroad))[,"Pr(>|t|)"][2])
+fdr_broad_dop <- append(fdr_broad_dop, coef(summary(LPCbroad))[,"Pr(>|t|)"][5])
+fdr_broad_LC <- append(fdr_broad_LC, coef(summary(LPCbroad))[,"Pr(>|t|)"][6])
+fdr_broad_int <- append(fdr_broad_int, coef(summary(LPCbroad))[,"Pr(>|t|)"][1])
+summary(LPCbroad)
+```
+
+```{r}
+confint(LPCbroad, method="Wald")
+```
+
+```{r}
+LPCitem <- lmer(z_ers_LPC_posthoc.x ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_item_ahipp <- append(fdr_item_ahipp, coef(summary(LPCitem))[,"Pr(>|t|)"][2])
+fdr_item_dop <- append(fdr_item_dop, coef(summary(LPCitem))[,"Pr(>|t|)"][5])
+fdr_item_LC <- append(fdr_item_LC, coef(summary(LPCitem))[,"Pr(>|t|)"][6])
+fdr_item_int <- append(fdr_item_int, coef(summary(LPCitem))[,"Pr(>|t|)"][1])
+summary(LPCitem)
+```
+
+```{r}
+confint(LPCitem, method="Wald")
+```
+
+```{r}
+vmPFCbroad <- lmer(z_ers_vmPFC_posthoc ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias || sub_num), data = all_data, subset=(is.finite(source_acc) & is.finite(RespBias) & rec_acc==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_broad_ahipp <- append(fdr_broad_ahipp, coef(summary(vmPFCbroad))[,"Pr(>|t|)"][2])
+fdr_broad_dop <- append(fdr_broad_dop, coef(summary(vmPFCbroad))[,"Pr(>|t|)"][5])
+fdr_broad_LC <- append(fdr_broad_LC, coef(summary(vmPFCbroad))[,"Pr(>|t|)"][6])
+fdr_broad_int <- append(fdr_broad_int, coef(summary(vmPFCbroad))[,"Pr(>|t|)"][1])
+summary(vmPFCbroad)
+```
+
+```{r}
+confint(vmPFCbroad, method="Wald")
+```
+
+```{r}
+vmPFCitem <- lmer(z_ers_vmPFC_posthoc.x ~ ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x + (ahipp_uni.z + prc_uni.z + ach_uni.z + dop_uni.z + nor_uni.z + ach4_uni.z + RespBias.x || sub_num), data = item_data, subset=(is.finite(source_acc.x) & is.finite(RespBias.x) & rec_acc.x==1),
+              control = lmerControl(optimizer ='bobyqa', optCtrl=list(maxfun=2e5)))
+fdr_item_ahipp <- append(fdr_item_ahipp, coef(summary(vmPFCitem))[,"Pr(>|t|)"][2])
+fdr_item_dop <- append(fdr_item_dop, coef(summary(vmPFCitem))[,"Pr(>|t|)"][5])
+fdr_item_LC <- append(fdr_item_LC, coef(summary(vmPFCitem))[,"Pr(>|t|)"][6])
+fdr_item_int <- append(fdr_item_int, coef(summary(vmPFCitem))[,"Pr(>|t|)"][1])
+summary(vmPFCitem)
+```
+
+```{r}
+confint(vmPFCitem, method="Wald")
+```
+
+```{r}
+print(fdr_broad_int)
+print(p.adjust(fdr_broad_int, method = 'fdr'))
+```
+
+```{r}
+print(fdr_item_int)
+print(p.adjust(fdr_item_int, method = 'fdr'))
+```
+
+```{r}
+print(fdr_broad_ahipp)
+print(p.adjust(fdr_broad_ahipp, method = 'fdr'))
+```
+
+```{r}
+print(fdr_broad_dop)
+print(p.adjust(fdr_broad_dop, method = 'fdr'))
+```
+
+```{r}
+print(fdr_broad_LC)
+print(p.adjust(fdr_broad_LC, method = 'fdr'))
+```
+
+```{r}
+print(fdr_item_ahipp)
+print(p.adjust(fdr_item_ahipp, method = 'fdr'))
+```
+
+```{r}
+print(fdr_item_dop)
+print(p.adjust(fdr_item_dop, method = 'fdr'))
+```
+
+```{r}
+print(fdr_item_LC)
+print(p.adjust(fdr_item_LC, method = 'fdr'))
+```
+
+```{r}
+export_summs(hippbroad, MTLbroad, fusibroad, mParbroad, LPCbroad, lPFCbroad, vmPFCbroad, number_format = "%.2g",
+             model.names = c('Hipp', 'MTLcortex', 'Fusiform', 'mPar', 'LPC', 'd&lPFC', 
+                             'vmPFC'), to.file = 'docx', 
+             file.name = './tables/BroadERSbyProbe.docx')
+```
+
+```{r}
+export_summs(hippitem, MTLitem, fusiitem, mParitem, LPCitem, lPFCitem, vmPFCitem, number_format = "%.2g",
+             model.names = c('Hipp', 'MTLcortex', 'Fusiform', 'mPar', 'LPC', 'd&lPFC', 
+                             'vmPFC'), to.file = 'docx', 
+             file.name = './tables/ItemERSbyProbe.docx')
+```
